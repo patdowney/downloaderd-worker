@@ -10,9 +10,9 @@ import (
 )
 
 func TestUrlResolving(t *testing.T) {
-	requestId := "this-is-some-id"
+	requestId := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 
-	expectedUrl, _ := url.Parse("/request/this-is-some-id")
+	expectedUrl, _ := url.Parse("/request/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
 	res := dh.RequestResource{}
 
 	router := mux.NewRouter()
@@ -31,9 +31,9 @@ func TestUrlResolving(t *testing.T) {
 }
 
 func TestGetRequestUrl(t *testing.T) {
-	requestId := "this-is-some-id"
+	requestId := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 
-	expectedUrl, _ := url.Parse("/this-is-some-id")
+	expectedUrl, _ := url.Parse("/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
 	res := dh.RequestResource{}
 	router := mux.NewRouter()
 
