@@ -6,18 +6,22 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/patdowney/downloaderd/api"
+	"github.com/patdowney/downloaderd/common"
 	"github.com/patdowney/downloaderd/download"
 	"log"
 	"net/http"
 )
 
 type DownloadResource struct {
+	Clock           common.Clock
 	DownloadService *download.DownloadService
 	router          *mux.Router
 }
 
 func NewDownloadResource(downloadService *download.DownloadService) *DownloadResource {
-	return &DownloadResource{DownloadService: downloadService}
+	return &DownloadResource{
+		Clock:           &common.RealClock{},
+		DownloadService: downloadService}
 }
 
 func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
@@ -26,6 +30,10 @@ func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("request")
 
 	r.router = parentRouter
+}
+
+func (r *DownloadResource) WrapError(err error) *api.Error {
+	return api.NewError(common.NewErrorWrapper(err, r.Clock.Now()))
 }
 
 func (r *DownloadResource) Index() http.HandlerFunc {
@@ -38,7 +46,7 @@ func (r *DownloadResource) Index() http.HandlerFunc {
 		if err != nil {
 			log.Printf("server-error: %v", err)
 			rw.WriteHeader(http.StatusInternalServerError)
-			encoder.Encode(api.NewError(err))
+			encoder.Encode(r.WrapError(err))
 		} else {
 			rw.WriteHeader(http.StatusOK)
 
@@ -60,7 +68,7 @@ func (r *DownloadResource) Get() http.HandlerFunc {
 		if err != nil {
 			log.Printf("server-error: %v", err)
 			rw.WriteHeader(http.StatusInternalServerError)
-			encoder.Encode(api.NewError(err))
+			encoder.Encode(r.WrapError(err))
 		} else if download != nil {
 			rw.WriteHeader(http.StatusOK)
 			encoder.Encode(api.NewDownload(download))

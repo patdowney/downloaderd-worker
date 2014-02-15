@@ -22,12 +22,12 @@ type Metadata struct {
 	Errors []error
 }
 
-func GetMetadataFromHead(request *Request) (*Metadata, error) {
+func GetMetadataFromHead(requestTime time.Time, request *Request) (*Metadata, error) {
 	res, err := http.Head(request.Url)
 	if err != nil {
 		return nil, err
 	}
-	metadata := NewMetadata(request, res, time.Now())
+	metadata := NewMetadata(request, res, requestTime)
 
 	return metadata, nil
 }

@@ -3,64 +3,67 @@ package download
 import (
 	"errors"
 	"fmt"
-	"github.com/nu7hatch/gouuid"
+	"github.com/patdowney/downloaderd/common"
 	"net/http"
-	"time"
 )
 
 type RequestService struct {
+	Clock           common.Clock
+	IDGenerator     IDGenerator
 	requestStore    RequestStore
 	downloadService *DownloadService
 }
 
 func NewRequestService(requestStore RequestStore, downloadService *DownloadService) *RequestService {
 	s := RequestService{
+		IDGenerator:     &UUIDGenerator{},
+		Clock:           &common.RealClock{},
 		requestStore:    requestStore,
 		downloadService: downloadService}
 
 	return &s
 }
 
-func (r *RequestService) ProcessNewRequest(downloadRequest *Request) (*Request, error) {
-	id, err := uuid.NewV4()
+func (s *RequestService) ProcessNewRequest(downloadRequest *Request) (*Request, error) {
+	id, err := s.IDGenerator.GenerateID()
 	if err != nil {
 		return nil, err
 	}
 
-	downloadRequest.Id = id.String()
-	downloadRequest.TimeRequested = time.Now()
+	downloadRequest.Id = id
+	downloadRequest.TimeRequested = s.Clock.Now()
 
-	m, err := GetMetadataFromHead(downloadRequest)
+	m, err := GetMetadataFromHead(s.Clock.Now(), downloadRequest)
 	if err != nil {
-		downloadRequest.AddError(err)
+		downloadRequest.AddError(err, s.Clock.Now())
 	} else {
 		downloadRequest.Metadata = m
 		if m.StatusCode == http.StatusOK {
-			download, err := r.downloadService.ProcessRequest(downloadRequest)
+			download, err := s.downloadService.ProcessRequest(downloadRequest)
 			if err != nil {
-				downloadRequest.AddError(err)
+				downloadRequest.AddError(err, s.Clock.Now())
 			}
 			downloadRequest.Download = download
 		} else {
-			em := fmt.Sprintf("need-a-better-error: non-200 response from %s", downloadRequest.Url)
+			em := fmt.Sprintf("non-200 response from source")
 			err = errors.New(em)
 
-			downloadRequest.AddError(err)
+			downloadRequest.AddError(err, s.Clock.Now())
 		}
 	}
 
-	err = r.requestStore.Add(downloadRequest)
+	err = s.requestStore.Add(downloadRequest)
 	if err != nil {
-		downloadRequest.AddError(err)
+		downloadRequest.AddError(err, s.Clock.Now())
 	}
 
 	return downloadRequest, err
 }
 
-func (r *RequestService) ListAll() ([]*Request, error) {
-	return r.requestStore.ListAll()
+func (s *RequestService) ListAll() ([]*Request, error) {
+	return s.requestStore.ListAll()
 }
 
-func (r *RequestService) FindById(id string) (*Request, error) {
-	return r.requestStore.FindById(id)
+func (s *RequestService) FindById(id string) (*Request, error) {
+	return s.requestStore.FindById(id)
 }

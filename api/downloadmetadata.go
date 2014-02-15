@@ -6,8 +6,9 @@ import (
 )
 
 type Metadata struct {
-	MimeType string `json:"mime_type,omitempty"`
-	Size     uint64 `json:"size,omitempty"`
+	MimeType      string    `json:"mime_type,omitempty"`
+	Size          uint64    `json:"size,omitempty"`
+	TimeRequested time.Time `json:"time_requested,omitempty"`
 
 	// HTTP specific stuff
 	Server       string    `json:"http_server,omitempty"`
@@ -17,27 +18,16 @@ type Metadata struct {
 	StatusCode   int       `json:"http_status_code,omitempty"`
 }
 
-func (m *Metadata) ToDownloadMetadata() *download.Metadata {
-	dm := &download.Metadata{
-		MimeType:     m.MimeType,
-		Size:         m.Size,
-		Server:       m.Server,
-		LastModified: m.LastModified,
-		ETag:         m.ETag,
-		Expires:      m.Expires,
-		StatusCode:   m.StatusCode}
-	return dm
-}
-
 func NewMetadata(dm *download.Metadata) *Metadata {
 	m := &Metadata{
-		MimeType:     dm.MimeType,
-		Size:         dm.Size,
-		Server:       dm.Server,
-		LastModified: dm.LastModified,
-		ETag:         dm.ETag,
-		Expires:      dm.Expires,
-		StatusCode:   dm.StatusCode}
+		TimeRequested: dm.TimeRequested,
+		MimeType:      dm.MimeType,
+		Size:          dm.Size,
+		Server:        dm.Server,
+		LastModified:  dm.LastModified,
+		ETag:          dm.ETag,
+		Expires:       dm.Expires,
+		StatusCode:    dm.StatusCode}
 
 	return m
 }

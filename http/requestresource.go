@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/patdowney/downloaderd/api"
+	"github.com/patdowney/downloaderd/common"
 	"github.com/patdowney/downloaderd/download"
 	"io"
 	"log"
@@ -14,12 +15,15 @@ import (
 )
 
 type RequestResource struct {
+	Clock          common.Clock
 	RequestService *download.RequestService
 	router         *mux.Router
 }
 
 func NewRequestResource(requestService *download.RequestService) *RequestResource {
-	return &RequestResource{RequestService: requestService}
+	return &RequestResource{
+		Clock:          &common.RealClock{},
+		RequestService: requestService}
 }
 
 func (r *RequestResource) RegisterRoutes(parentRouter *mux.Router) {
@@ -29,6 +33,10 @@ func (r *RequestResource) RegisterRoutes(parentRouter *mux.Router) {
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("request")
 
 	r.router = parentRouter
+}
+
+func (r *RequestResource) WrapError(err error) *api.Error {
+	return api.NewError(common.NewErrorWrapper(err, r.Clock.Now()))
 }
 
 func (r *RequestResource) Index() http.HandlerFunc {
@@ -41,7 +49,7 @@ func (r *RequestResource) Index() http.HandlerFunc {
 		if err != nil {
 			log.Printf("server-error: %v", err)
 			rw.WriteHeader(http.StatusInternalServerError)
-			encoder.Encode(api.NewError(err))
+			encoder.Encode(r.WrapError(err))
 		} else {
 			rw.WriteHeader(http.StatusOK)
 
@@ -63,7 +71,7 @@ func (r *RequestResource) Get() http.HandlerFunc {
 		if err != nil {
 			log.Printf("server-error: %v", err)
 			rw.WriteHeader(http.StatusInternalServerError)
-			encoder.Encode(api.NewError(err))
+			encoder.Encode(r.WrapError(err))
 		} else if downloadRequest != nil {
 			rw.WriteHeader(http.StatusOK)
 			encoder.Encode(api.NewRequest(downloadRequest))
@@ -75,6 +83,20 @@ func (r *RequestResource) Get() http.HandlerFunc {
 			encoder.Encode(errors.New(errMessage))
 		}
 	}
+}
+
+func (r *RequestResource) ValidateIncomingRequest(inReq *api.IncomingRequest) error {
+	if inReq.Url == "" {
+		return errors.New("empty url")
+	}
+
+	u, err := url.Parse(inReq.Url)
+	if err != nil {
+		return err
+	} else if u.Scheme != "http" && u.Scheme != "https" {
+		return errors.New(fmt.Sprintf("unsupported url scheme: '%s'", u.Scheme))
+	}
+	return nil
 }
 
 func (r *RequestResource) DecodeInputRequest(body io.Reader) (*api.IncomingRequest, error) {
@@ -100,6 +122,14 @@ func (r *RequestResource) Post() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		apiIncomingRequest, err := r.DecodeInputRequest(req.Body)
 		if err != nil {
+			log.Printf("incoming-request-decode-error: %v", err)
+			http.Error(rw, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		err = r.ValidateIncomingRequest(apiIncomingRequest)
+		if err != nil {
+			log.Printf("incoming-request-validation-error: %v", err)
 			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -108,11 +138,11 @@ func (r *RequestResource) Post() http.HandlerFunc {
 		downloadRequest, err := r.RequestService.ProcessNewRequest(inReq)
 
 		if err != nil {
-			log.Printf("server-error: %v", err)
+			log.Printf("request-processing-error: %v", err)
 			rw.Header().Set("Content-Type", "application/json")
 			rw.WriteHeader(http.StatusInternalServerError)
 			encoder := json.NewEncoder(rw)
-			encoder.Encode(api.NewError(err))
+			encoder.Encode(r.WrapError(err))
 		} else {
 			newUrl, _ := r.GetRequestUrl(downloadRequest.Id)
 

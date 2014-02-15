@@ -36,7 +36,7 @@ func NewRequest(orig *download.Request) *Request {
 		ExpectedChecksumType: orig.ChecksumType,
 		TimeRequested:        orig.TimeRequested,
 		Callback:             orig.Callback,
-		Errors:               make([]*Error, len(orig.Errors)),
+		Errors:               make([]*Error, 0, len(orig.Errors)),
 		Link:                 make([]Link, 0)}
 
 	if orig.Metadata != nil {
@@ -48,8 +48,10 @@ func NewRequest(orig *download.Request) *Request {
 	}
 
 	if len(orig.Errors) > 0 {
-		for i, e := range orig.Errors {
-			apiRequest.Errors[i] = NewError(e.OriginalError)
+		for _, e := range orig.Errors {
+			if e.OriginalError != nil {
+				apiRequest.Errors = append(apiRequest.Errors, NewError(&e.ErrorWrapper))
+			}
 		}
 	}
 

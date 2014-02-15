@@ -19,6 +19,12 @@ type Config struct {
 	RequestDataFile   string
 
 	AccessLogWriter io.Writer
+	ErrorLogWriter  io.Writer
+}
+
+func ConfigureLogging(config *Config) {
+	log.SetOutput(config.ErrorLogWriter)
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
 }
 
 func ParseArgs() *Config {
@@ -32,6 +38,7 @@ func ParseArgs() *Config {
 	flag.Parse()
 
 	c.AccessLogWriter = os.Stdout
+	c.ErrorLogWriter = os.Stderr
 
 	return c
 }
@@ -57,16 +64,7 @@ func CreateServer(config *Config) {
 func main() {
 	config := ParseArgs()
 
-	//	requestStore := local.NewRequestStore()
-	//	downloadStore, err := local.NewDownloadStore(config.OrderFile)
-	//	fileStore := local.NewFileStore(config.SaveDirectory)
+	ConfigureLogging(config)
 
-	//downloader := NewDownloader(requestStore, orderStore, urlSaver, config.QueueLength, config.WorkerCount)
-	//downloader.Start()
-
-	//r := createRouter(downloader, urlSaver)
-	//http.Handle("/", r)
-
-	//_ = http.ListenAndServe(config.ListenAddress, nil)
 	CreateServer(config)
 }

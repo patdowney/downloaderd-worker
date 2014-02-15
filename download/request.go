@@ -17,6 +17,6 @@ type Request struct {
 	Metadata      *Metadata
 }
 
-func (r *Request) AddError(requestError error) {
-	r.Errors = append(r.Errors, NewRequestError(requestError, time.Now()))
+func (r *Request) AddError(requestError error, errorTime time.Time) {
+	r.Errors = append(r.Errors, NewRequestError(requestError, errorTime))
 }

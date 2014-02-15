@@ -9,7 +9,6 @@ type LocalDownloadStore struct {
 	LocalJSONStore
 	sync.RWMutex
 	repository []*download.Download
-	DataFile   string
 }
 
 func (s *LocalDownloadStore) Add(download *download.Download) error {
@@ -85,7 +84,6 @@ func NewDownloadStore(dataFile string) (download.DownloadStore, error) {
 		repository: make([]*download.Download, 0)}
 
 	downloadStore.DataFile = dataFile
-
 	err := downloadStore.load()
 
 	return downloadStore, err
