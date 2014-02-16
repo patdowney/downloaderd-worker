@@ -17,6 +17,10 @@ type Download struct {
 	TimeUpdated   time.Time `json:"time_updated,omitempty"`
 	Finished      bool      `json:"finished"`
 
+	Duration              time.Duration `json:"duration,omitempty"`
+	PercentComplete       float32       `json:"percent_complete,omitempty"`
+	AverageBytesPerSecond float32       `json:"avg_bytes_per_second,omitempty"`
+
 	Links []Link `json:"links,omitempty"`
 }
 
@@ -34,8 +38,8 @@ func NewDownload(dd *download.Download) *Download {
 	d := &Download{
 		Id:            dd.Id,
 		Url:           dd.Url,
-		Checksum:      dd.ExpectedChecksum,
-		ChecksumType:  dd.ExpectedChecksumType,
+		Checksum:      dd.Checksum,
+		ChecksumType:  dd.ChecksumType,
 		TimeStarted:   dd.TimeStarted,
 		TimeRequested: dd.TimeRequested,
 		Finished:      dd.Finished}
@@ -47,6 +51,10 @@ func NewDownload(dd *download.Download) *Download {
 	if dd.Status != nil {
 		d.BytesRead = dd.Status.BytesRead
 		d.TimeUpdated = dd.Status.UpdateTime
+
+		d.Duration = dd.Duration() / time.Millisecond
+		d.PercentComplete = dd.PercentComplete()
+		d.AverageBytesPerSecond = dd.AverageBytesPerSecond()
 	}
 
 	// somehow populate links

@@ -26,8 +26,8 @@ func (us *LocalFileStore) SavePathFromUrl(sourceUrl string) string {
 	return filepath.Join(urlObj.Host, urlObj.Path)
 }
 
-func (us *LocalFileStore) SavePathForOrder(order *download.Download) (string, error) {
-	savePathFromUrl := us.SavePathFromUrl(order.Url)
+func (us *LocalFileStore) SavePathForDownload(download *download.Download) (string, error) {
+	savePathFromUrl := us.SavePathFromUrl(download.Url)
 	cleanRootDirectory := filepath.Clean(us.RootDirectory)
 	dirtySavePath := filepath.Join(us.RootDirectory, savePathFromUrl)
 	cleanSavePath := filepath.Clean(dirtySavePath)
@@ -40,8 +40,8 @@ func (us *LocalFileStore) SavePathForOrder(order *download.Download) (string, er
 	return cleanSavePath, nil
 }
 
-func (us *LocalFileStore) GetReader(order *download.Download) (io.ReadCloser, error) {
-	dataPath, err := us.SavePathForOrder(order)
+func (us *LocalFileStore) GetReader(download *download.Download) (io.ReadCloser, error) {
+	dataPath, err := us.SavePathForDownload(download)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +54,8 @@ func (us *LocalFileStore) GetReader(order *download.Download) (io.ReadCloser, er
 	return openFile, nil
 }
 
-func (us *LocalFileStore) GetWriter(order *download.Download) (io.WriteCloser, error) {
-	savePath, err := us.SavePathForOrder(order)
+func (us *LocalFileStore) GetWriter(download *download.Download) (io.WriteCloser, error) {
+	savePath, err := us.SavePathForDownload(download)
 	if err != nil {
 		return nil, err
 	}

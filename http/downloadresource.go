@@ -8,6 +8,7 @@ import (
 	"github.com/patdowney/downloaderd/api"
 	"github.com/patdowney/downloaderd/common"
 	"github.com/patdowney/downloaderd/download"
+	"io"
 	"log"
 	"net/http"
 )
@@ -27,7 +28,8 @@ func NewDownloadResource(downloadService *download.DownloadService) *DownloadRes
 func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
 	parentRouter.HandleFunc("/", r.Index()).Methods("GET", "HEAD")
 	// regexp matches ids that look like '8671301b-49fa-416c-4bc0-2869963779e5'
-	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("request")
+	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("download")
+	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/data", r.GetData()).Methods("GET", "HEAD").Name("download-data")
 
 	r.router = parentRouter
 }
@@ -52,6 +54,52 @@ func (r *DownloadResource) Index() http.HandlerFunc {
 
 			encoder.Encode(api.NewDownloadList(&downloadList))
 		}
+	}
+}
+
+func (r *DownloadResource) GetData() http.HandlerFunc {
+	return func(rw http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		downloadId := vars["id"]
+
+		download, err := r.DownloadService.FindById(downloadId)
+		encoder := json.NewEncoder(rw)
+
+		if err != nil {
+			log.Printf("server-error: %v", err)
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusInternalServerError)
+			encoder.Encode(r.WrapError(err))
+		} else if download != nil {
+			if download.Finished {
+				bufferedReader, err := r.DownloadService.GetReader(download)
+				if err != nil {
+					log.Printf("server-error: %v", err)
+					rw.Header().Set("Content-Type", "application/json")
+					rw.WriteHeader(http.StatusInternalServerError)
+					encoder.Encode(r.WrapError(err))
+				}
+
+				meta := download.Metadata
+
+				if meta.MimeType != "" {
+					rw.Header().Set("Content-Type", meta.MimeType)
+				}
+				if meta.Size != 0 {
+					rw.Header().Set("Content-Length", fmt.Sprintf("%d", meta.Size))
+				} else {
+					rw.Header().Set("Content-Length", fmt.Sprintf("%d", download.Status.BytesRead))
+				}
+				rw.WriteHeader(http.StatusOK)
+
+				io.Copy(rw, bufferedReader)
+			} else {
+				rw.WriteHeader(http.StatusNoContent)
+			}
+		} else {
+			rw.WriteHeader(http.StatusNotFound)
+		}
+
 	}
 }
 

@@ -12,8 +12,8 @@ import (
 
 type Config struct {
 	ListenAddress     string
-	WorkerCount       int
-	QueueLength       int
+	WorkerCount       uint
+	QueueLength       uint
 	DownloadDirectory string
 	DownloadDataFile  string
 	RequestDataFile   string
@@ -30,9 +30,9 @@ func ConfigureLogging(config *Config) {
 func ParseArgs() *Config {
 	c := &Config{}
 	flag.StringVar(&c.ListenAddress, "http", ":8080", "address to listen on")
-	flag.IntVar(&c.WorkerCount, "workers", 2, "number of workers to use")
-	flag.IntVar(&c.QueueLength, "queuelength", 32, "size of download queue")
-	flag.StringVar(&c.DownloadDirectory, "downloaddir", ".", "root directory of save tree.")
+	flag.UintVar(&c.WorkerCount, "workers", 2, "number of workers to use")
+	flag.UintVar(&c.QueueLength, "queuelength", 32, "size of download queue")
+	flag.StringVar(&c.DownloadDirectory, "downloaddir", "./download-data", "root directory of save tree.")
 	flag.StringVar(&c.DownloadDataFile, "downloaddata", "downloads.json", "download database file")
 	flag.StringVar(&c.RequestDataFile, "requestdata", "requests.json", "request database file")
 	flag.Parse()
@@ -47,18 +47,29 @@ func CreateServer(config *Config) {
 	s := dh.NewServer(&dh.HTTPConfig{ListenAddress: config.ListenAddress})
 
 	downloadStore, err := local.NewDownloadStore(config.DownloadDataFile)
-	downloadService := download.NewDownloadService(downloadStore)
+	if err != nil {
+		log.Printf("init-download-store-error: %v", err)
+	}
+
+	fileStore := local.NewFileStore(config.DownloadDirectory)
+
+	requestStore, err := local.NewRequestStore(config.RequestDataFile)
+	if err != nil {
+		log.Printf("init-request-store-error: %v", err)
+	}
+
+	downloadService := download.NewDownloadService(downloadStore, fileStore, config.WorkerCount, config.QueueLength)
+	downloadService.Start()
 	downloadResource := dh.NewDownloadResource(downloadService)
 	s.AddResource("/download", downloadResource)
 
-	requestStore, err := local.NewRequestStore(config.RequestDataFile)
 	requestService := download.NewRequestService(requestStore, downloadService)
 	requestResource := dh.NewRequestResource(requestService)
 
 	s.AddResource("/request", requestResource)
 
 	err = s.ListenAndServe()
-	log.Print(err)
+	log.Printf("init-listen-error: %v", err)
 }
 
 func main() {

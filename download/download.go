@@ -1,35 +1,53 @@
 package download
 
 import (
+	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
+	"errors"
+	"fmt"
+	"hash"
+	"strings"
 	"time"
 )
 
 type Download struct {
-	Id                   string
-	Url                  string
-	ResourceKey          ResourceKey
-	ExpectedChecksum     string
-	ExpectedChecksumType string
-	Metadata             *Metadata
-	Status               *Status
-	TimeStarted          time.Time
-	TimeRequested        time.Time
-	Finished             bool
-	Errors               []DownloadError
+	Id            string
+	Url           string
+	ResourceKey   ResourceKey
+	Checksum      string
+	ChecksumType  string
+	Metadata      *Metadata
+	Status        *Status
+	TimeStarted   time.Time
+	TimeRequested time.Time
+	Finished      bool
+	Errors        []DownloadError
 }
 
 func NewDownload(id string, request *Request, downloadTime time.Time) *Download {
-	return &Download{
-		Id:                   id,
-		Url:                  request.Url,
-		ExpectedChecksum:     request.Checksum,
-		ExpectedChecksumType: request.ChecksumType,
-		ResourceKey:          request.ResourceKey,
-		Metadata:             request.Metadata,
-		Status:               &Status{},
-		TimeRequested:        downloadTime,
-		Errors:               make([]DownloadError, 0)}
+	d := Download{
+		Id:            id,
+		Url:           request.Url,
+		Checksum:      request.Checksum,
+		ChecksumType:  request.ChecksumType,
+		ResourceKey:   request.ResourceKey,
+		Metadata:      request.Metadata,
+		Status:        &Status{},
+		TimeRequested: downloadTime,
+		Errors:        make([]DownloadError, 0)}
 
+	validatedChecksum, err := d.ValidateChecksum(d.ChecksumType)
+	d.ChecksumType = validatedChecksum
+	if err != nil {
+		de := DownloadError{DownloadId: id}
+		de.Time = downloadTime
+		de.OriginalError = err
+		d.Errors = append(d.Errors, de)
+	}
+
+	return &d
 }
 
 func (s *Download) PercentComplete() float32 {
@@ -42,4 +60,35 @@ func (s *Download) Duration() time.Duration {
 
 func (s *Download) AverageBytesPerSecond() float32 {
 	return float32(float64(s.Status.BytesRead) / s.Duration().Seconds())
+}
+
+func (s *Download) ValidateChecksum(checksumType string) (string, error) {
+	switch strings.ToLower(checksumType) {
+	case "md5":
+		return checksumType, nil
+	case "sha1":
+		return checksumType, nil
+	case "sha256":
+		return checksumType, nil
+	case "sha512":
+		return checksumType, nil
+	}
+
+	errMsg := fmt.Sprintf("No hash found for %s defaulting to %s", s.ChecksumType, "sha256")
+	return "sha256", errors.New(errMsg)
+}
+
+func (s *Download) Hash() (hash.Hash, error) {
+	switch strings.ToLower(s.ChecksumType) {
+	case "md5":
+		return md5.New(), nil
+	case "sha1":
+		return sha1.New(), nil
+	case "sha256":
+		return sha256.New(), nil
+	case "sha512":
+		return sha512.New(), nil
+	}
+
+	return nil, errors.New(fmt.Sprintf("Invalid checksum type %s", s.ChecksumType))
 }

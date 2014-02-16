@@ -16,7 +16,18 @@ func (s *LocalDownloadStore) Add(download *download.Download) error {
 	s.repository = append(s.repository, download)
 	s.Unlock()
 
-	err := s.SaveToDisk(s.repository)
+	err := s.Commit()
+
+	return err
+}
+
+func (s *LocalDownloadStore) Update(download *download.Download) error {
+	d, err := s.FindById(download.Id)
+	if err == nil {
+		*d = *download
+	}
+
+	err = s.Commit()
 
 	return err
 }

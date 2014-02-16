@@ -28,3 +28,8 @@ func NewRequestError(err error, errorTime time.Time) *RequestError {
 	reqErr.OriginalError = err
 	return reqErr
 }
+
+type CallbackError struct {
+	DownloadError
+	RequestId string
+}
