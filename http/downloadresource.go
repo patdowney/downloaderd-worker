@@ -48,11 +48,17 @@ func (r *DownloadResource) Index() http.HandlerFunc {
 		if err != nil {
 			log.Printf("server-error: %v", err)
 			rw.WriteHeader(http.StatusInternalServerError)
-			encoder.Encode(r.WrapError(err))
+			encErr := encoder.Encode(r.WrapError(err))
+			if encErr != nil {
+				log.Printf("encoder-error: %v", encErr)
+			}
 		} else {
 			rw.WriteHeader(http.StatusOK)
 
-			encoder.Encode(api.NewDownloadList(&downloadList))
+			encErr := encoder.Encode(api.NewDownloadList(&downloadList))
+			if encErr != nil {
+				log.Printf("encoder-error: %v", encErr)
+			}
 		}
 	}
 }
@@ -69,7 +75,10 @@ func (r *DownloadResource) GetData() http.HandlerFunc {
 			log.Printf("server-error: %v", err)
 			rw.Header().Set("Content-Type", "application/json")
 			rw.WriteHeader(http.StatusInternalServerError)
-			encoder.Encode(r.WrapError(err))
+			encErr := encoder.Encode(r.WrapError(err))
+			if encErr != nil {
+				log.Printf("encoder-error: %v", encErr)
+			}
 		} else if download != nil {
 			if download.Finished {
 				bufferedReader, err := r.DownloadService.GetReader(download)
@@ -77,7 +86,10 @@ func (r *DownloadResource) GetData() http.HandlerFunc {
 					log.Printf("server-error: %v", err)
 					rw.Header().Set("Content-Type", "application/json")
 					rw.WriteHeader(http.StatusInternalServerError)
-					encoder.Encode(r.WrapError(err))
+					encErr := encoder.Encode(r.WrapError(err))
+					if encErr != nil {
+						log.Printf("encoder-error: %v", encErr)
+					}
 				}
 
 				meta := download.Metadata
@@ -116,16 +128,25 @@ func (r *DownloadResource) Get() http.HandlerFunc {
 		if err != nil {
 			log.Printf("server-error: %v", err)
 			rw.WriteHeader(http.StatusInternalServerError)
-			encoder.Encode(r.WrapError(err))
+			encErr := encoder.Encode(r.WrapError(err))
+			if encErr != nil {
+				log.Printf("encoder-error: %v", encErr)
+			}
 		} else if download != nil {
 			rw.WriteHeader(http.StatusOK)
-			encoder.Encode(api.NewDownload(download))
+			encErr := encoder.Encode(api.NewDownload(download))
+			if encErr != nil {
+				log.Printf("encoder-error: %v", encErr)
+			}
 		} else {
 			errMessage := fmt.Sprintf("Unable to find order with id:%s", downloadId)
 			log.Printf("server-error: %v", errMessage)
 
 			rw.WriteHeader(http.StatusNotFound)
-			encoder.Encode(errors.New(errMessage))
+			encErr := encoder.Encode(errors.New(errMessage))
+			if encErr != nil {
+				log.Printf("encoder-error: %v", encErr)
+			}
 		}
 	}
 }

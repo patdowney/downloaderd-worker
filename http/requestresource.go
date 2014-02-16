@@ -49,11 +49,16 @@ func (r *RequestResource) Index() http.HandlerFunc {
 		if err != nil {
 			log.Printf("server-error: %v", err)
 			rw.WriteHeader(http.StatusInternalServerError)
-			encoder.Encode(r.WrapError(err))
+			encErr := encoder.Encode(r.WrapError(err))
+			if encErr != nil {
+				log.Printf("encode-error: %v", encErr)
+			}
 		} else {
 			rw.WriteHeader(http.StatusOK)
-
-			encoder.Encode(api.NewRequestList(&requestList))
+			encErr := encoder.Encode(api.NewRequestList(&requestList))
+			if encErr != nil {
+				log.Printf("encode-error: %v", encErr)
+			}
 		}
 	}
 }
@@ -71,16 +76,25 @@ func (r *RequestResource) Get() http.HandlerFunc {
 		if err != nil {
 			log.Printf("server-error: %v", err)
 			rw.WriteHeader(http.StatusInternalServerError)
-			encoder.Encode(r.WrapError(err))
+			encErr := encoder.Encode(r.WrapError(err))
+			if encErr != nil {
+				log.Printf("encode-error: %v", encErr)
+			}
 		} else if downloadRequest != nil {
 			rw.WriteHeader(http.StatusOK)
-			encoder.Encode(api.NewRequest(downloadRequest))
+			encErr := encoder.Encode(api.NewRequest(downloadRequest))
+			if encErr != nil {
+				log.Printf("encode-error: %v", encErr)
+			}
 		} else {
 			errMessage := fmt.Sprintf("Unable to find request with id:%s", requestId)
 			log.Printf("server-error: %v", errMessage)
 
 			rw.WriteHeader(http.StatusNotFound)
-			encoder.Encode(errors.New(errMessage))
+			encErr := encoder.Encode(errors.New(errMessage))
+			if encErr != nil {
+				log.Printf("encode-error: %v", encErr)
+			}
 		}
 	}
 }
@@ -142,7 +156,10 @@ func (r *RequestResource) Post() http.HandlerFunc {
 			rw.Header().Set("Content-Type", "application/json")
 			rw.WriteHeader(http.StatusInternalServerError)
 			encoder := json.NewEncoder(rw)
-			encoder.Encode(r.WrapError(err))
+			encErr := encoder.Encode(r.WrapError(err))
+			if encErr != nil {
+				log.Printf("encode-error: %v", encErr)
+			}
 		} else {
 			newUrl, _ := r.GetRequestUrl(downloadRequest.Id)
 
@@ -150,7 +167,10 @@ func (r *RequestResource) Post() http.HandlerFunc {
 			rw.Header().Set("Location", newUrl.String())
 			rw.WriteHeader(http.StatusAccepted)
 			encoder := json.NewEncoder(rw)
-			encoder.Encode(api.NewRequest(downloadRequest))
+			encErr := encoder.Encode(api.NewRequest(downloadRequest))
+			if encErr != nil {
+				log.Printf("encode-error: %v", encErr)
+			}
 
 		}
 	}
