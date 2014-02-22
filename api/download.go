@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/patdowney/downloaderd/download"
+	"net/http"
 	"time"
 )
 
@@ -42,7 +43,8 @@ func NewDownload(dd *download.Download) *Download {
 		ChecksumType:  dd.ChecksumType,
 		TimeStarted:   dd.TimeStarted,
 		TimeRequested: dd.TimeRequested,
-		Finished:      dd.Finished}
+		Finished:      dd.Finished,
+		Links:         make([]Link, 0)}
 
 	if dd.Metadata != nil {
 		d.Metadata = NewMetadata(dd.Metadata)
@@ -58,6 +60,16 @@ func NewDownload(dd *download.Download) *Download {
 	}
 
 	// somehow populate links
+	d.Links = append(d.Links,
+		Link{Relation: "self", Value: d.Id,
+			ValueId: "id", RouteName: "download"})
+	d.Links = append(d.Links,
+		Link{Relation: "data", Value: d.Id,
+			ValueId: "id", RouteName: "download-data"})
 
 	return d
+}
+
+func (d *Download) ResolveLinks(linkResolver *LinkResolver, req *http.Request) {
+	linkResolver.ResolveLinks(req, &d.Links)
 }

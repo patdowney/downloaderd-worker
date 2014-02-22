@@ -12,7 +12,7 @@ type Request struct {
 	ChecksumType  string
 	TimeRequested time.Time
 	Callback      string
-	Download      *Download
+	DownloadId    string
 	Errors        []*RequestError
 	Metadata      *Metadata
 }

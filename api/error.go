@@ -12,8 +12,8 @@ type Error struct {
 
 func NewError(e *common.ErrorWrapper) *Error {
 	err := &Error{Time: e.Time}
-	if e.OriginalError != nil {
-		err.Error = e.OriginalError.Error()
+	if e.OriginalError != "" {
+		err.Error = e.OriginalError
 	} else {
 		err.Error = "error missing - weird."
 	}

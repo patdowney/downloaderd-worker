@@ -24,6 +24,16 @@ type Download struct {
 	TimeRequested time.Time
 	Finished      bool
 	Errors        []DownloadError
+	Callbacks     []Callback
+}
+
+func (d *Download) AddCallback(callback *Callback) {
+	d.Callbacks = append(d.Callbacks, *callback)
+}
+
+func (d *Download) AddRequestCallback(request *Request) {
+	c := NewCallback(request.Id, request.Callback)
+	d.AddCallback(c)
 }
 
 func NewDownload(id string, request *Request, downloadTime time.Time) *Download {
@@ -36,14 +46,15 @@ func NewDownload(id string, request *Request, downloadTime time.Time) *Download 
 		Metadata:      request.Metadata,
 		Status:        &Status{},
 		TimeRequested: downloadTime,
-		Errors:        make([]DownloadError, 0)}
+		Errors:        make([]DownloadError, 0),
+		Callbacks:     make([]Callback, 0)}
 
 	validatedChecksum, err := d.ValidateChecksum(d.ChecksumType)
 	d.ChecksumType = validatedChecksum
 	if err != nil {
 		de := DownloadError{DownloadId: id}
 		de.Time = downloadTime
-		de.OriginalError = err
+		de.OriginalError = err.Error()
 		d.Errors = append(d.Errors, de)
 	}
 

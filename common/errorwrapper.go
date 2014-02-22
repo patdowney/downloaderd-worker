@@ -6,13 +6,13 @@ import (
 
 type ErrorWrapper struct {
 	Time          time.Time
-	OriginalError error
+	OriginalError string
 }
 
 func (e *ErrorWrapper) Error() string {
-	return e.OriginalError.Error()
+	return e.OriginalError
 }
 
 func NewErrorWrapper(err error, time time.Time) *ErrorWrapper {
-	return &ErrorWrapper{OriginalError: err, Time: time}
+	return &ErrorWrapper{OriginalError: err.Error(), Time: time}
 }

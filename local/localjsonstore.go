@@ -2,6 +2,7 @@ package local
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"sync"
 )
@@ -22,6 +23,9 @@ func (l *LocalJSONStore) SaveToDisk(data interface{}) error {
 			if openFile != nil {
 				encoder := json.NewEncoder(openFile)
 				err = encoder.Encode(data)
+				if err != nil {
+					log.Printf("decode-error: %v", err)
+				}
 			}
 		}
 	}
@@ -38,6 +42,9 @@ func (l *LocalJSONStore) LoadFromDisk(data interface{}) error {
 		if err == nil {
 			encoder := json.NewDecoder(openFile)
 			err = encoder.Decode(data)
+			if err != nil {
+				log.Printf("decode-error: %v", err)
+			}
 		}
 	}
 

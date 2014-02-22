@@ -58,7 +58,7 @@ func (w Worker) WriteData(dataReader io.Reader, outputWriter io.Writer, statusWr
 func (w Worker) SendError(id string, err error) {
 	e := DownloadError{DownloadId: id}
 	e.Time = w.Clock.Now()
-	e.OriginalError = err
+	e.OriginalError = err.Error()
 
 	w.ErrorChannel <- e
 }

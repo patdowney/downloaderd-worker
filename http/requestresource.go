@@ -18,6 +18,7 @@ type RequestResource struct {
 	Clock          common.Clock
 	RequestService *download.RequestService
 	router         *mux.Router
+	linkResolver   *api.LinkResolver
 }
 
 func NewRequestResource(requestService *download.RequestService) *RequestResource {
@@ -33,6 +34,17 @@ func (r *RequestResource) RegisterRoutes(parentRouter *mux.Router) {
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("request")
 
 	r.router = parentRouter
+	r.linkResolver = api.NewLinkResolver(parentRouter)
+}
+
+func (r *RequestResource) populateListLinks(req *http.Request, requestList *[]*api.Request) {
+	for _, l := range *requestList {
+		r.populateLinks(req, l)
+	}
+}
+
+func (r *RequestResource) populateLinks(req *http.Request, request *api.Request) {
+	request.ResolveLinks(r.linkResolver, req)
 }
 
 func (r *RequestResource) WrapError(err error) *api.Error {
@@ -55,7 +67,9 @@ func (r *RequestResource) Index() http.HandlerFunc {
 			}
 		} else {
 			rw.WriteHeader(http.StatusOK)
-			encErr := encoder.Encode(api.NewRequestList(&requestList))
+			rl := api.NewRequestList(&requestList)
+			r.populateListLinks(req, rl)
+			encErr := encoder.Encode(rl)
 			if encErr != nil {
 				log.Printf("encode-error: %v", encErr)
 			}
@@ -82,7 +96,9 @@ func (r *RequestResource) Get() http.HandlerFunc {
 			}
 		} else if downloadRequest != nil {
 			rw.WriteHeader(http.StatusOK)
-			encErr := encoder.Encode(api.NewRequest(downloadRequest))
+			dr := api.NewRequest(downloadRequest)
+			r.populateLinks(req, dr)
+			encErr := encoder.Encode(dr)
 			if encErr != nil {
 				log.Printf("encode-error: %v", encErr)
 			}
@@ -162,12 +178,13 @@ func (r *RequestResource) Post() http.HandlerFunc {
 			}
 		} else {
 			newUrl, _ := r.GetRequestUrl(downloadRequest.Id)
-
 			rw.Header().Set("Content-Type", "application/json")
 			rw.Header().Set("Location", newUrl.String())
 			rw.WriteHeader(http.StatusAccepted)
 			encoder := json.NewEncoder(rw)
-			encErr := encoder.Encode(api.NewRequest(downloadRequest))
+			dr := api.NewRequest(downloadRequest)
+			r.populateLinks(req, dr)
+			encErr := encoder.Encode(dr)
 			if encErr != nil {
 				log.Printf("encode-error: %v", encErr)
 			}

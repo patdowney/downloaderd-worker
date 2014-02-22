@@ -36,5 +36,6 @@ func (s *Server) GetHandler() http.Handler {
 
 func (s *Server) ListenAndServe() error {
 	http.Handle("/", s.GetHandler())
+
 	return http.ListenAndServe(s.ListenAddress, nil)
 }

@@ -43,7 +43,7 @@ func (s *RequestService) ProcessNewRequest(downloadRequest *Request) (*Request, 
 			if err != nil {
 				downloadRequest.AddError(err, s.Clock.Now())
 			}
-			downloadRequest.Download = download
+			downloadRequest.DownloadId = download.Id
 		} else {
 			em := fmt.Sprintf("non-200 response from source")
 			err = errors.New(em)

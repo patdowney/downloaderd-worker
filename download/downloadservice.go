@@ -1,7 +1,7 @@
 package download
 
 import (
-	"errors"
+	//	"errors"
 	"github.com/patdowney/downloaderd/common"
 	"io"
 	"time"
@@ -53,7 +53,7 @@ func (s *DownloadService) ProcessError(downloadError *DownloadError) {
 	} else {
 		e := DownloadError{DownloadId: downloadError.DownloadId}
 		e.Time = s.Clock.Now()
-		e.OriginalError = errors.New("status received before metadata")
+		e.OriginalError = "status received before metadata"
 		s.errorChannel <- e
 	}
 }
@@ -73,7 +73,7 @@ func (s *DownloadService) ProcessStatusUpdate(statusUpdate *StatusUpdate) {
 	} else {
 		e := DownloadError{DownloadId: statusUpdate.DownloadId}
 		e.Time = s.Clock.Now()
-		e.OriginalError = errors.New("status received before metadata")
+		e.OriginalError = "status received before metadata"
 		s.errorChannel <- e
 	}
 }
@@ -103,6 +103,9 @@ func (s *DownloadService) ProcessRequest(downloadRequest *Request) (*Download, e
 	}
 
 	download := NewDownload(id, downloadRequest, s.Clock.Now())
+	if downloadRequest.Callback != "" {
+		download.AddRequestCallback(downloadRequest)
+	}
 	err = s.downloadStore.Add(download)
 
 	s.downloadQueue <- *download

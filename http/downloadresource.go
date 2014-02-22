@@ -17,6 +17,7 @@ type DownloadResource struct {
 	Clock           common.Clock
 	DownloadService *download.DownloadService
 	router          *mux.Router
+	linkResolver    *api.LinkResolver
 }
 
 func NewDownloadResource(downloadService *download.DownloadService) *DownloadResource {
@@ -25,13 +26,25 @@ func NewDownloadResource(downloadService *download.DownloadService) *DownloadRes
 		DownloadService: downloadService}
 }
 
+func (r *DownloadResource) populateListLinks(req *http.Request, downloadList *[]*api.Download) {
+	for _, l := range *downloadList {
+		r.populateLinks(req, l)
+	}
+}
+
+func (r *DownloadResource) populateLinks(req *http.Request, download *api.Download) {
+	download.ResolveLinks(r.linkResolver, req)
+}
+
 func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
 	parentRouter.HandleFunc("/", r.Index()).Methods("GET", "HEAD")
 	// regexp matches ids that look like '8671301b-49fa-416c-4bc0-2869963779e5'
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("download")
+	//parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/callback/{requestId:[a-f0-9-]{36}}", r.GetCallbackStatus()).Methods("GET", "HEAD").Name("callback-status")
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/data", r.GetData()).Methods("GET", "HEAD").Name("download-data")
 
 	r.router = parentRouter
+	r.linkResolver = api.NewLinkResolver(parentRouter)
 }
 
 func (r *DownloadResource) WrapError(err error) *api.Error {
@@ -54,8 +67,9 @@ func (r *DownloadResource) Index() http.HandlerFunc {
 			}
 		} else {
 			rw.WriteHeader(http.StatusOK)
-
-			encErr := encoder.Encode(api.NewDownloadList(&downloadList))
+			dl := api.NewDownloadList(&downloadList)
+			r.populateListLinks(req, dl)
+			encErr := encoder.Encode(dl)
 			if encErr != nil {
 				log.Printf("encoder-error: %v", encErr)
 			}
@@ -134,7 +148,9 @@ func (r *DownloadResource) Get() http.HandlerFunc {
 			}
 		} else if download != nil {
 			rw.WriteHeader(http.StatusOK)
-			encErr := encoder.Encode(api.NewDownload(download))
+			d := api.NewDownload(download)
+			r.populateLinks(req, d)
+			encErr := encoder.Encode(d)
 			if encErr != nil {
 				log.Printf("encoder-error: %v", encErr)
 			}

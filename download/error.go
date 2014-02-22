@@ -13,7 +13,7 @@ type DownloadError struct {
 func NewDownloadError(id string, err error, errorTime time.Time) *DownloadError {
 	downloadErr := &DownloadError{DownloadId: id}
 	downloadErr.Time = errorTime
-	downloadErr.OriginalError = err
+	downloadErr.OriginalError = err.Error()
 
 	return downloadErr
 }
@@ -25,7 +25,7 @@ type RequestError struct {
 func NewRequestError(err error, errorTime time.Time) *RequestError {
 	reqErr := &RequestError{}
 	reqErr.Time = errorTime
-	reqErr.OriginalError = err
+	reqErr.OriginalError = err.Error()
 	return reqErr
 }
 
