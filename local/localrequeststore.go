@@ -48,7 +48,7 @@ func (s *LocalRequestStore) FindByResourceKey(resourceKey download.ResourceKey) 
 	defer s.RUnlock()
 	results := make([]*download.Request, 0, len(s.repository))
 	for _, request := range s.repository {
-		if request.ResourceKey == resourceKey {
+		if request.ResourceKey() == resourceKey {
 			results = append(results, request)
 		}
 	}

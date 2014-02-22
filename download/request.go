@@ -7,7 +7,6 @@ import (
 type Request struct {
 	Id            string
 	Url           string
-	ResourceKey   ResourceKey
 	Checksum      string
 	ChecksumType  string
 	TimeRequested time.Time
@@ -15,6 +14,14 @@ type Request struct {
 	DownloadId    string
 	Errors        []*RequestError
 	Metadata      *Metadata
+}
+
+func (r *Request) ResourceKey() ResourceKey {
+	rk := ResourceKey{Url: r.Url}
+	if r.Metadata != nil {
+		rk.ETag = r.Metadata.ETag
+	}
+	return rk
 }
 
 func (r *Request) AddError(requestError error, errorTime time.Time) {

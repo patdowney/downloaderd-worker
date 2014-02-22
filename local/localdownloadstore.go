@@ -73,7 +73,13 @@ func (s *LocalDownloadStore) FindByResourceKey(resourceKey download.ResourceKey)
 	defer s.RUnlock()
 
 	for _, download := range s.repository {
-		if download.ResourceKey == resourceKey {
+		if download.Url == resourceKey.Url {
+			if download.Metadata != nil {
+				if download.Metadata.ETag == resourceKey.ETag {
+					return download, nil
+
+				}
+			}
 			return download, nil
 		}
 	}

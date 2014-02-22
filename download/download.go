@@ -15,7 +15,6 @@ import (
 type Download struct {
 	Id            string
 	Url           string
-	ResourceKey   ResourceKey
 	Checksum      string
 	ChecksumType  string
 	Metadata      *Metadata
@@ -42,7 +41,6 @@ func NewDownload(id string, request *Request, downloadTime time.Time) *Download 
 		Url:           request.Url,
 		Checksum:      request.Checksum,
 		ChecksumType:  request.ChecksumType,
-		ResourceKey:   request.ResourceKey,
 		Metadata:      request.Metadata,
 		Status:        &Status{},
 		TimeRequested: downloadTime,

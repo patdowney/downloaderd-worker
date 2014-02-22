@@ -4,6 +4,7 @@ import (
 	//	"errors"
 	"github.com/patdowney/downloaderd/common"
 	"io"
+	"log"
 	"time"
 )
 
@@ -96,7 +97,7 @@ func (s *DownloadService) Start() {
 	s.StartEventHandlers()
 }
 
-func (s *DownloadService) ProcessRequest(downloadRequest *Request) (*Download, error) {
+func (s *DownloadService) createDownload(downloadRequest *Request) (*Download, error) {
 	id, err := s.IDGenerator.GenerateID()
 	if err != nil {
 		return nil, err
@@ -109,6 +110,19 @@ func (s *DownloadService) ProcessRequest(downloadRequest *Request) (*Download, e
 	err = s.downloadStore.Add(download)
 
 	s.downloadQueue <- *download
+
+	return download, err
+}
+
+func (s *DownloadService) ProcessRequest(downloadRequest *Request) (*Download, error) {
+	download, err := s.downloadStore.FindByResourceKey(downloadRequest.ResourceKey())
+	if download == nil {
+		download, err = s.createDownload(downloadRequest)
+	}
+
+	if err != nil {
+		log.Printf("process-request: %v", err)
+	}
 
 	return download, err
 }
