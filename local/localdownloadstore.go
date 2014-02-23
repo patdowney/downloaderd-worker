@@ -22,7 +22,7 @@ func (s *LocalDownloadStore) Add(download *download.Download) error {
 }
 
 func (s *LocalDownloadStore) Update(download *download.Download) error {
-	d, err := s.FindById(download.Id)
+	d, err := s.FindByID(download.ID)
 	if err == nil {
 		*d = *download
 	}
@@ -56,12 +56,12 @@ func (s *LocalDownloadStore) load() error {
 	return err
 }
 
-func (s *LocalDownloadStore) FindById(downloadId string) (*download.Download, error) {
+func (s *LocalDownloadStore) FindByID(downloadID string) (*download.Download, error) {
 	s.RLock()
 	defer s.RUnlock()
 
 	for _, download := range s.repository {
-		if download.Id == downloadId {
+		if download.ID == downloadID {
 			return download, nil
 		}
 	}
@@ -73,7 +73,7 @@ func (s *LocalDownloadStore) FindByResourceKey(resourceKey download.ResourceKey)
 	defer s.RUnlock()
 
 	for _, download := range s.repository {
-		if download.Url == resourceKey.Url {
+		if download.URL == resourceKey.URL {
 			if download.Metadata != nil {
 				if download.Metadata.ETag == resourceKey.ETag {
 					return download, nil

@@ -15,18 +15,18 @@ import (
 )
 
 type DownloadHTTPError struct {
-	Url        string
+	URL        string
 	Method     string
 	StatusCode int
 	Status     string
 }
 
 func (e DownloadHTTPError) Error() string {
-	return fmt.Sprintf("%s failed for %s with code %d (%s)", e.Method, e.Url, e.StatusCode, e.Status)
+	return fmt.Sprintf("%s failed for %s with code %d (%s)", e.Method, e.URL, e.StatusCode, e.Status)
 }
 
 type Worker struct {
-	Id            uint
+	ID            uint
 	Clock         common.Clock
 	FileStore     FileStore
 	WorkQueue     chan Download
@@ -56,7 +56,7 @@ func (w Worker) WriteData(dataReader io.Reader, outputWriter io.Writer, statusWr
 }
 
 func (w Worker) SendError(id string, err error) {
-	e := DownloadError{DownloadId: id}
+	e := DownloadError{DownloadID: id}
 	e.Time = w.Clock.Now()
 	e.OriginalError = err.Error()
 
@@ -66,16 +66,16 @@ func (w Worker) SendError(id string, err error) {
 func (w Worker) SaveWithStatus(download *Download) error {
 	downloadHash, err := download.Hash()
 	if err != nil {
-		w.SendError(download.Id, err)
+		w.SendError(download.ID, err)
 	}
 
-	statusWriter := NewStatusWriter(download.Id, w.UpdateChannel, downloadHash)
+	statusWriter := NewStatusWriter(download.ID, w.UpdateChannel, downloadHash)
 	defer statusWriter.Close()
 
 	outputWriter, err := w.FileStore.GetWriter(download)
 	defer outputWriter.Close()
 	if err != nil {
-		w.SendError(download.Id, err)
+		w.SendError(download.ID, err)
 		return err
 	}
 
@@ -85,20 +85,20 @@ func (w Worker) SaveWithStatus(download *Download) error {
 func (w Worker) Save(download *Download, outputWriter io.Writer, statusWriter *StatusWriter) error {
 	download.TimeStarted = time.Now()
 
-	res, err := http.Get(download.Url)
+	res, err := http.Get(download.URL)
 	if err != nil {
-		w.SendError(download.Id, err)
+		w.SendError(download.ID, err)
 		return err
 	}
 
 	if res.StatusCode != http.StatusOK {
 		err = DownloadHTTPError{
-			Url:        download.Url,
+			URL:        download.URL,
 			Method:     "Get",
 			Status:     res.Status,
 			StatusCode: res.StatusCode}
 
-		w.SendError(download.Id, err)
+		w.SendError(download.ID, err)
 		return err
 	}
 
@@ -108,7 +108,7 @@ func (w Worker) Save(download *Download, outputWriter io.Writer, statusWriter *S
 	bufferedReader := bufio.NewReader(fetchedBody)
 	err = w.WriteData(bufferedReader, outputWriter, statusWriter)
 	if err != nil {
-		w.SendError(download.Id, err)
+		w.SendError(download.ID, err)
 	}
 
 	return err
@@ -117,7 +117,7 @@ func (w Worker) Save(download *Download, outputWriter io.Writer, statusWriter *S
 func NewWorker(id uint, workQueue chan Download, updateChannel chan StatusUpdate, errorChannel chan DownloadError, fileStore FileStore) *Worker {
 	worker := &Worker{
 		Clock:         &common.RealClock{},
-		Id:            id,
+		ID:            id,
 		WorkQueue:     workQueue,
 		UpdateChannel: updateChannel,
 		ErrorChannel:  errorChannel,

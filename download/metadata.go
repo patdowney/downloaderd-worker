@@ -7,7 +7,7 @@ import (
 )
 
 type Metadata struct {
-	RequestId     string
+	RequestID     string
 	TimeRequested time.Time
 	MimeType      string
 	Size          uint64
@@ -23,7 +23,7 @@ type Metadata struct {
 }
 
 func GetMetadataFromHead(requestTime time.Time, request *Request) (*Metadata, error) {
-	res, err := http.Head(request.Url)
+	res, err := http.Head(request.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func ParseTime(timeHeader string) (time.Time, error) {
 func NewMetadata(request *Request, res *http.Response, requestTime time.Time) *Metadata {
 
 	m := &Metadata{
-		RequestId:     request.Id,
+		RequestID:     request.ID,
 		TimeRequested: requestTime,
 		MimeType:      res.Header.Get("Content-Type"),
 		ETag:          res.Header.Get("ETag"),

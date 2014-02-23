@@ -20,16 +20,16 @@ func NewFileStore(rootDirectory string) download.FileStore {
 	return &LocalFileStore{RootDirectory: rootDirectory}
 }
 
-func (us *LocalFileStore) SavePathFromUrl(sourceUrl string) string {
-	urlObj, _ := url.Parse(sourceUrl)
+func (us *LocalFileStore) SavePathFromURL(sourceURL string) string {
+	urlObj, _ := url.Parse(sourceURL)
 
 	return filepath.Join(urlObj.Host, urlObj.Path)
 }
 
 func (us *LocalFileStore) SavePathForDownload(download *download.Download) (string, error) {
-	savePathFromUrl := us.SavePathFromUrl(download.Url)
+	savePathFromURL := us.SavePathFromURL(download.URL)
 	cleanRootDirectory := filepath.Clean(us.RootDirectory)
-	dirtySavePath := filepath.Join(us.RootDirectory, savePathFromUrl)
+	dirtySavePath := filepath.Join(us.RootDirectory, savePathFromURL)
 	cleanSavePath := filepath.Clean(dirtySavePath)
 
 	//ensure cleanSavePath starts with us.RootDirectory

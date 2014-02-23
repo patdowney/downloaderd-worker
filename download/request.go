@@ -5,19 +5,19 @@ import (
 )
 
 type Request struct {
-	Id            string
-	Url           string
+	ID            string
+	URL           string
 	Checksum      string
 	ChecksumType  string
 	TimeRequested time.Time
 	Callback      string
-	DownloadId    string
+	DownloadID    string
 	Errors        []*RequestError
 	Metadata      *Metadata
 }
 
 func (r *Request) ResourceKey() ResourceKey {
-	rk := ResourceKey{Url: r.Url}
+	rk := ResourceKey{URL: r.URL}
 	if r.Metadata != nil {
 		rk.ETag = r.Metadata.ETag
 	}

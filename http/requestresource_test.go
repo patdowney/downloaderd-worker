@@ -9,44 +9,44 @@ import (
 	"testing"
 )
 
-func TestUrlResolving(t *testing.T) {
-	requestId := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+func TestURLResolving(t *testing.T) {
+	requestID := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 
-	expectedUrl, _ := url.Parse("/request/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+	expectedURL, _ := url.Parse("/request/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
 	res := dh.RequestResource{}
 
 	router := mux.NewRouter()
 
 	res.RegisterRoutes(router.PathPrefix("/request").Subrouter())
 
-	u, err := res.GetRequestUrl(requestId)
+	u, err := res.GetRequestURL(requestID)
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	if *u != *expectedUrl {
-		t.Errorf(`GetRequestUrl('%s') = %q want %q`, requestId, u, expectedUrl)
+	if *u != *expectedURL {
+		t.Errorf(`GetRequestURL('%s') = %q want %q`, requestID, u, expectedURL)
 	}
 }
 
-func TestGetRequestUrl(t *testing.T) {
-	requestId := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+func TestGetRequestURL(t *testing.T) {
+	requestID := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 
-	expectedUrl, _ := url.Parse("/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+	expectedURL, _ := url.Parse("/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
 	res := dh.RequestResource{}
 	router := mux.NewRouter()
 
 	res.RegisterRoutes(router)
 
-	u, err := res.GetRequestUrl(requestId)
+	u, err := res.GetRequestURL(requestID)
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	if *u != *expectedUrl {
-		t.Errorf(`GetRequestUrl('%s') = %q want %q`, requestId, u, expectedUrl)
+	if *u != *expectedURL {
+		t.Errorf(`GetRequestURL('%s') = %q want %q`, requestID, u, expectedURL)
 	}
 }
 
@@ -57,7 +57,7 @@ func TestParseCompleteRequest(t *testing.T) {
 	incomingJson := strings.NewReader(jsonString)
 
 	expectedIncoming := api.IncomingRequest{
-		Url:          "http://example.com/some/resource",
+		URL:          "http://example.com/some/resource",
 		Checksum:     "abcde",
 		ChecksumType: "abc",
 		Callback:     "http://example.com/callback"}
@@ -74,7 +74,7 @@ func TestParseWithPartialRequest(t *testing.T) {
 	jsonString := `{ "url": "http://example.com/some/resource" }`
 	incomingJson := strings.NewReader(jsonString)
 
-	expectedIncoming := api.IncomingRequest{Url: "http://example.com/some/resource"}
+	expectedIncoming := api.IncomingRequest{URL: "http://example.com/some/resource"}
 
 	r, _ := res.DecodeInputRequest(incomingJson)
 	if *r != expectedIncoming {
@@ -99,9 +99,9 @@ func TestRequestResourcePostIncomingRequest(t *testing.T) {}
 //func (r *RequestResource) Get() HandlerFunc {
 //	return func(rw http.ResponseWriter, req *http.Request) {
 //		vars := mux.Vars(req)
-//		requestId := vars["requestId"]
+//		requestID := vars["requestID"]
 //
-//		downloadRequest := r.RequestStore.FindById(requestId)
+//		downloadRequest := r.RequestStore.FindByID(requestID)
 //
 //		if downloadRequest != nil {
 //			rw.Header().Set("Content-Type", "text/json")
@@ -110,7 +110,7 @@ func TestRequestResourcePostIncomingRequest(t *testing.T) {}
 //			encoder.Encode(downloadRequest)
 //		} else {
 //			rw.WriteHeader(http.StatusNotFound)
-//			log.Printf("Couldn't find request with id:%s", downloadRequestId)
+//			log.Printf("Couldn't find request with id:%s", downloadRequestID)
 //		}
 //	}
 //}
@@ -145,10 +145,10 @@ func TestRequestResourcePostIncomingRequest(t *testing.T) {}
 //			rw.WriteHeader(http.StatusInternalServerError)
 //			log.Printf("server-error: %v", err)
 //		} else {
-//			newUrl := GetUrlForDownloadRequestId(req, d.Id)
+//			newURL := GetURLForDownloadRequestID(req, d.ID)
 //
 //			rw.Header().Set("Content-Type", "text/json")
-//			rw.Header().Set("Location", newUrl)
+//			rw.Header().Set("Location", newURL)
 //			rw.WriteHeader(http.StatusAccepted)
 //			encoder := json.NewEncoder(rw)
 //			encoder.Encode(d)

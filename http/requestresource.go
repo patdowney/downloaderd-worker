@@ -80,9 +80,9 @@ func (r *RequestResource) Index() http.HandlerFunc {
 func (r *RequestResource) Get() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
-		requestId := vars["id"]
+		requestID := vars["id"]
 
-		downloadRequest, err := r.RequestService.FindById(requestId)
+		downloadRequest, err := r.RequestService.FindByID(requestID)
 
 		encoder := json.NewEncoder(rw)
 		rw.Header().Set("Content-Type", "application/json")
@@ -103,7 +103,7 @@ func (r *RequestResource) Get() http.HandlerFunc {
 				log.Printf("encode-error: %v", encErr)
 			}
 		} else {
-			errMessage := fmt.Sprintf("Unable to find request with id:%s", requestId)
+			errMessage := fmt.Sprintf("Unable to find request with id:%s", requestID)
 			log.Printf("server-error: %v", errMessage)
 
 			rw.WriteHeader(http.StatusNotFound)
@@ -116,11 +116,11 @@ func (r *RequestResource) Get() http.HandlerFunc {
 }
 
 func (r *RequestResource) ValidateIncomingRequest(inReq *api.IncomingRequest) error {
-	if inReq.Url == "" {
+	if inReq.URL == "" {
 		return errors.New("empty url")
 	}
 
-	u, err := url.Parse(inReq.Url)
+	u, err := url.Parse(inReq.URL)
 	if err != nil {
 		return err
 	} else if u.Scheme != "http" && u.Scheme != "https" {
@@ -140,7 +140,7 @@ func (r *RequestResource) DecodeInputRequest(body io.Reader) (*api.IncomingReque
 	return &inReq, nil
 }
 
-func (r *RequestResource) GetRequestUrl(id string) (*url.URL, error) {
+func (r *RequestResource) GetRequestURL(id string) (*url.URL, error) {
 	if r.router != nil {
 		return r.router.Get("request").URL("id", id)
 	}
@@ -177,9 +177,9 @@ func (r *RequestResource) Post() http.HandlerFunc {
 				log.Printf("encode-error: %v", encErr)
 			}
 		} else {
-			newUrl, _ := r.GetRequestUrl(downloadRequest.Id)
+			newURL, _ := r.GetRequestURL(downloadRequest.ID)
 			rw.Header().Set("Content-Type", "application/json")
-			rw.Header().Set("Location", newUrl.String())
+			rw.Header().Set("Location", newURL.String())
 			rw.WriteHeader(http.StatusAccepted)
 			encoder := json.NewEncoder(rw)
 			dr := api.NewRequest(downloadRequest)

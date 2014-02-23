@@ -7,8 +7,8 @@ import (
 )
 
 type Download struct {
-	Id            string    `json:"id"`
-	Url           string    `json:"url"`
+	ID            string    `json:"id"`
+	URL           string    `json:"url"`
 	Checksum      string    `json:"checksum,omitempty"`
 	ChecksumType  string    `json:"checksum_type,omitempty"`
 	Metadata      *Metadata `json:"metadata"`
@@ -37,8 +37,8 @@ func NewDownloadList(origList *[]*download.Download) *[]*Download {
 
 func NewDownload(dd *download.Download) *Download {
 	d := &Download{
-		Id:            dd.Id,
-		Url:           dd.Url,
+		ID:            dd.ID,
+		URL:           dd.URL,
 		Checksum:      dd.Checksum,
 		ChecksumType:  dd.ChecksumType,
 		TimeStarted:   dd.TimeStarted,
@@ -61,11 +61,11 @@ func NewDownload(dd *download.Download) *Download {
 
 	// somehow populate links
 	d.Links = append(d.Links,
-		Link{Relation: "self", Value: d.Id,
-			ValueId: "id", RouteName: "download"})
+		Link{Relation: "self", Value: d.ID,
+			ValueID: "id", RouteName: "download"})
 	d.Links = append(d.Links,
-		Link{Relation: "data", Value: d.Id,
-			ValueId: "id", RouteName: "download-data"})
+		Link{Relation: "data", Value: d.ID,
+			ValueID: "id", RouteName: "download-data"})
 
 	return d
 }

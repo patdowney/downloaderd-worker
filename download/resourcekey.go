@@ -1,6 +1,6 @@
 package download
 
 type ResourceKey struct {
-	Url  string
+	URL  string
 	ETag string
 }

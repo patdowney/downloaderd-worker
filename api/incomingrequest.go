@@ -5,7 +5,7 @@ import (
 )
 
 type IncomingRequest struct {
-	Url          string `json:"url"`
+	URL          string `json:"url"`
 	Checksum     string `json:"checksum,omitempty"`
 	ChecksumType string `json:"checksum_type,omitempty"`
 	Callback     string `json:"callback,omitempty"`
@@ -13,7 +13,7 @@ type IncomingRequest struct {
 
 func (air *IncomingRequest) ToDownloadRequest() *download.Request {
 	downloadReq := &download.Request{
-		Url:          air.Url,
+		URL:          air.URL,
 		Checksum:     air.Checksum,
 		ChecksumType: air.ChecksumType,
 		Callback:     air.Callback,

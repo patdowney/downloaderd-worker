@@ -13,8 +13,8 @@ import (
 )
 
 type Download struct {
-	Id            string
-	Url           string
+	ID            string
+	URL           string
 	Checksum      string
 	ChecksumType  string
 	Metadata      *Metadata
@@ -31,14 +31,14 @@ func (d *Download) AddCallback(callback *Callback) {
 }
 
 func (d *Download) AddRequestCallback(request *Request) {
-	c := NewCallback(request.Id, request.Callback)
+	c := NewCallback(request.ID, request.Callback)
 	d.AddCallback(c)
 }
 
 func NewDownload(id string, request *Request, downloadTime time.Time) *Download {
 	d := Download{
-		Id:            id,
-		Url:           request.Url,
+		ID:            id,
+		URL:           request.URL,
 		Checksum:      request.Checksum,
 		ChecksumType:  request.ChecksumType,
 		Metadata:      request.Metadata,
@@ -50,7 +50,7 @@ func NewDownload(id string, request *Request, downloadTime time.Time) *Download 
 	validatedChecksum, err := d.ValidateChecksum(d.ChecksumType)
 	d.ChecksumType = validatedChecksum
 	if err != nil {
-		de := DownloadError{DownloadId: id}
+		de := DownloadError{DownloadID: id}
 		de.Time = downloadTime
 		de.OriginalError = err.Error()
 		d.Errors = append(d.Errors, de)

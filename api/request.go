@@ -7,13 +7,13 @@ import (
 )
 
 type Request struct {
-	Id                   string    `json:"id"`
-	Url                  string    `json:"url"`
+	ID                   string    `json:"id"`
+	URL                  string    `json:"url"`
 	ExpectedChecksum     string    `json:"expected_checksum,omitempty"`
 	ExpectedChecksumType string    `json:"expected_checksum_type,omitempty"`
 	TimeRequested        time.Time `json:"time_requested"`
 	Callback             string    `json:"callback,omitempty"`
-	DownloadId           string    `json:"download_id,omitempty"`
+	DownloadID           string    `json:"download_id,omitempty"`
 	Errors               []*Error  `json:"errors,omitempty"`
 	Metadata             *Metadata `json:"metadata,omitempty"`
 	Links                []Link    `json:"links"`
@@ -31,11 +31,11 @@ func NewRequestList(origList *[]*download.Request) *[]*Request {
 
 func NewRequest(orig *download.Request) *Request {
 	apiRequest := &Request{
-		Id:                   orig.Id,
-		Url:                  orig.Url,
+		ID:                   orig.ID,
+		URL:                  orig.URL,
 		ExpectedChecksum:     orig.Checksum,
 		ExpectedChecksumType: orig.ChecksumType,
-		DownloadId:           orig.DownloadId,
+		DownloadID:           orig.DownloadID,
 		TimeRequested:        orig.TimeRequested,
 		Callback:             orig.Callback,
 		Errors:               make([]*Error, 0, len(orig.Errors)),
@@ -55,23 +55,23 @@ func NewRequest(orig *download.Request) *Request {
 
 	// add links here
 	apiRequest.Links = append(apiRequest.Links,
-		Link{Relation: "self", Value: apiRequest.Id,
-			ValueId: "id", RouteName: "request"})
+		Link{Relation: "self", Value: apiRequest.ID,
+			ValueID: "id", RouteName: "request"})
 
 	/*
 		if apiRequest.Callback != "" {
 			apiRequest.Links = append(apiRequest.Links,
-				Link{Relation: "callback-status", Value: apiRequest.Callback, ValueId: "id", RouteName: "callback-status"})
+				Link{Relation: "callback-status", Value: apiRequest.Callback, ValueID: "id", RouteName: "callback-status"})
 		}
 	*/
 
-	if apiRequest.DownloadId != "" {
+	if apiRequest.DownloadID != "" {
 		apiRequest.Links = append(apiRequest.Links,
-			Link{Relation: "download", Value: apiRequest.DownloadId,
-				ValueId: "id", RouteName: "download"})
+			Link{Relation: "download", Value: apiRequest.DownloadID,
+				ValueID: "id", RouteName: "download"})
 		apiRequest.Links = append(apiRequest.Links,
-			Link{Relation: "data", Value: apiRequest.DownloadId,
-				ValueId: "id", RouteName: "download-data"})
+			Link{Relation: "data", Value: apiRequest.DownloadID,
+				ValueID: "id", RouteName: "download-data"})
 	}
 
 	return apiRequest
