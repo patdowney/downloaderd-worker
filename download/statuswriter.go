@@ -7,16 +7,16 @@ import (
 )
 
 type StatusWriter struct {
-	DownloadId    string
+	DownloadID    string
 	Clock         common.Clock
 	StatusChannel chan StatusUpdate
 	Hash          hash.Hash
 }
 
-func NewStatusWriter(downloadId string, statusChannel chan StatusUpdate, hash hash.Hash) *StatusWriter {
+func NewStatusWriter(downloadID string, statusChannel chan StatusUpdate, hash hash.Hash) *StatusWriter {
 	sw := StatusWriter{
 		Clock:         &common.RealClock{},
-		DownloadId:    downloadId,
+		DownloadID:    downloadID,
 		StatusChannel: statusChannel,
 		Hash:          hash}
 
@@ -50,7 +50,7 @@ func (s *StatusWriter) SendFinishedUpdate() {
 
 func (s *StatusWriter) SendUpdate(byteCount uint64, finished bool) {
 	statusUpdate := StatusUpdate{
-		DownloadId: s.DownloadId,
+		DownloadID: s.DownloadID,
 		Checksum:   s.ChecksumString(),
 		Time:       s.Clock.Now(),
 		BytesRead:  byteCount,

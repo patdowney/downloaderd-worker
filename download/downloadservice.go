@@ -1,11 +1,9 @@
 package download
 
 import (
-	//	"errors"
-	"github.com/patdowney/downloaderd/common"
 	"io"
-	"log"
-	"time"
+
+	"github.com/patdowney/downloaderd/common"
 )
 
 type DownloadService struct {
@@ -19,9 +17,10 @@ type DownloadService struct {
 	WorkerCount uint
 	QueueLength uint
 
+	HookService *HookService
+
 	fileStore     FileStore
 	downloadStore DownloadStore
-	requestStore  RequestStore
 }
 
 func NewDownloadService(downloadStore DownloadStore, fileStore FileStore, workerCount uint, queueLength uint) *DownloadService {
@@ -40,19 +39,19 @@ func NewDownloadService(downloadStore DownloadStore, fileStore FileStore, worker
 }
 
 func (s *DownloadService) StartWorkers() {
-	for workerId := uint(0); workerId < s.WorkerCount; workerId++ {
-		w := NewWorker(workerId, s.downloadQueue, s.updateChannel, s.errorChannel, s.fileStore)
+	for workerID := uint(0); workerID < s.WorkerCount; workerID++ {
+		w := NewWorker(workerID, s.downloadQueue, s.updateChannel, s.errorChannel, s.fileStore)
 		w.start()
 	}
 }
 
 func (s *DownloadService) ProcessError(downloadError *DownloadError) {
-	download, _ := s.FindById(downloadError.DownloadId)
+	download, _ := s.FindByID(downloadError.DownloadID)
 
 	if download != nil {
 		download.Errors = append(download.Errors, *downloadError)
 	} else {
-		e := DownloadError{DownloadId: downloadError.DownloadId}
+		e := DownloadError{DownloadID: downloadError.DownloadID}
 		e.Time = s.Clock.Now()
 		e.OriginalError = "status received before metadata"
 		s.errorChannel <- e
@@ -60,19 +59,17 @@ func (s *DownloadService) ProcessError(downloadError *DownloadError) {
 }
 
 func (s *DownloadService) ProcessStatusUpdate(statusUpdate *StatusUpdate) {
-	download, _ := s.FindById(statusUpdate.DownloadId)
+	download, _ := s.FindByID(statusUpdate.DownloadID)
 
 	if download != nil {
-		var beginningOfTime time.Time
-		if download.TimeStarted == beginningOfTime {
-			download.TimeStarted = statusUpdate.Time
-		}
-		download.Checksum = statusUpdate.Checksum
-		download.Finished = statusUpdate.Finished
-		download.Status.AddStatusUpdate(statusUpdate)
+		download.AddStatusUpdate(statusUpdate)
 		s.downloadStore.Update(download)
+
+		if download.Finished && s.HookService != nil {
+			s.HookService.Notify(download)
+		}
 	} else {
-		e := DownloadError{DownloadId: statusUpdate.DownloadId}
+		e := DownloadError{DownloadID: statusUpdate.DownloadID}
 		e.Time = s.Clock.Now()
 		e.OriginalError = "status received before metadata"
 		s.errorChannel <- e
@@ -104,8 +101,8 @@ func (s *DownloadService) createDownload(downloadRequest *Request) (*Download, e
 	}
 
 	download := NewDownload(id, downloadRequest, s.Clock.Now())
-	if downloadRequest.Callback != "" {
-		download.AddRequestCallback(downloadRequest)
+	if downloadRequest.Callback != "" && s.HookService != nil {
+		s.HookService.Register(download.ID, downloadRequest.ID, downloadRequest.Callback)
 	}
 	err = s.downloadStore.Add(download)
 
@@ -116,13 +113,20 @@ func (s *DownloadService) createDownload(downloadRequest *Request) (*Download, e
 
 func (s *DownloadService) ProcessRequest(downloadRequest *Request) (*Download, error) {
 	download, err := s.downloadStore.FindByResourceKey(downloadRequest.ResourceKey())
-	if download == nil {
-		download, err = s.createDownload(downloadRequest)
+	if err != nil {
+		return nil, err
 	}
 
-	if err != nil {
-		log.Printf("process-request: %v", err)
+	if download != nil {
+		// notify request callback
+		if downloadRequest.Callback != "" && s.HookService != nil {
+			s.HookService.Register(download.ID, downloadRequest.ID, downloadRequest.Callback)
+			s.HookService.Notify(download)
+		}
+		return download, err
 	}
+
+	download, err = s.createDownload(downloadRequest)
 
 	return download, err
 }
@@ -131,8 +135,8 @@ func (s *DownloadService) ListAll() ([]*Download, error) {
 	return s.downloadStore.ListAll()
 }
 
-func (s *DownloadService) FindById(id string) (*Download, error) {
-	return s.downloadStore.FindById(id)
+func (s *DownloadService) FindByID(id string) (*Download, error) {
+	return s.downloadStore.FindByID(id)
 }
 
 func (s *DownloadService) GetReader(download *Download) (io.Reader, error) {

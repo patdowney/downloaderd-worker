@@ -40,7 +40,7 @@ func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
 	parentRouter.HandleFunc("/", r.Index()).Methods("GET", "HEAD")
 	// regexp matches ids that look like '8671301b-49fa-416c-4bc0-2869963779e5'
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("download")
-	//parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/callback/{requestId:[a-f0-9-]{36}}", r.GetCallbackStatus()).Methods("GET", "HEAD").Name("callback-status")
+	//parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/callback/{requestID:[a-f0-9-]{36}}", r.GetCallbackStatus()).Methods("GET", "HEAD").Name("callback-status")
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/data", r.GetData()).Methods("GET", "HEAD").Name("download-data")
 
 	r.router = parentRouter
@@ -80,9 +80,9 @@ func (r *DownloadResource) Index() http.HandlerFunc {
 func (r *DownloadResource) GetData() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
-		downloadId := vars["id"]
+		downloadID := vars["id"]
 
-		download, err := r.DownloadService.FindById(downloadId)
+		download, err := r.DownloadService.FindByID(downloadID)
 		encoder := json.NewEncoder(rw)
 
 		if err != nil {
@@ -132,9 +132,9 @@ func (r *DownloadResource) GetData() http.HandlerFunc {
 func (r *DownloadResource) Get() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
-		downloadId := vars["id"]
+		downloadID := vars["id"]
 
-		download, err := r.DownloadService.FindById(downloadId)
+		download, err := r.DownloadService.FindByID(downloadID)
 
 		encoder := json.NewEncoder(rw)
 		rw.Header().Set("Content-Type", "application/json")
@@ -155,7 +155,7 @@ func (r *DownloadResource) Get() http.HandlerFunc {
 				log.Printf("encoder-error: %v", encErr)
 			}
 		} else {
-			errMessage := fmt.Sprintf("Unable to find order with id:%s", downloadId)
+			errMessage := fmt.Sprintf("Unable to find order with id:%s", downloadID)
 			log.Printf("server-error: %v", errMessage)
 
 			rw.WriteHeader(http.StatusNotFound)

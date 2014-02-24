@@ -28,7 +28,7 @@ func (r *LinkResolver) ResolveLinks(req *http.Request, links *[]Link) {
 func (r *LinkResolver) ResolveLink(req *http.Request, link *Link) {
 	route := r.Router.Get(link.RouteName)
 	if route != nil {
-		u, err := route.URL(link.ValueId, link.Value)
+		u, err := route.URL(link.ValueID, link.Value)
 		if err != nil {
 			log.Print(err)
 		} else {

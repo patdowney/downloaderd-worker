@@ -32,11 +32,11 @@ func (s *LocalRequestStore) Add(request *download.Request) error {
 	return err
 }
 
-func (s *LocalRequestStore) FindById(requestId string) (*download.Request, error) {
+func (s *LocalRequestStore) FindByID(requestID string) (*download.Request, error) {
 	s.RLock()
 	defer s.RUnlock()
 	for _, request := range s.repository {
-		if request.Id == requestId {
+		if request.ID == requestID {
 			return request, nil
 		}
 	}

@@ -23,16 +23,6 @@ type Download struct {
 	TimeRequested time.Time
 	Finished      bool
 	Errors        []DownloadError
-	Callbacks     []Callback
-}
-
-func (d *Download) AddCallback(callback *Callback) {
-	d.Callbacks = append(d.Callbacks, *callback)
-}
-
-func (d *Download) AddRequestCallback(request *Request) {
-	c := NewCallback(request.ID, request.Callback)
-	d.AddCallback(c)
 }
 
 func NewDownload(id string, request *Request, downloadTime time.Time) *Download {
@@ -44,8 +34,7 @@ func NewDownload(id string, request *Request, downloadTime time.Time) *Download 
 		Metadata:      request.Metadata,
 		Status:        &Status{},
 		TimeRequested: downloadTime,
-		Errors:        make([]DownloadError, 0),
-		Callbacks:     make([]Callback, 0)}
+		Errors:        make([]DownloadError, 0)}
 
 	validatedChecksum, err := d.ValidateChecksum(d.ChecksumType)
 	d.ChecksumType = validatedChecksum
@@ -87,8 +76,8 @@ func (s *Download) ValidateChecksum(checksumType string) (string, error) {
 	return "sha256", errors.New(errMsg)
 }
 
-func (s *Download) Hash() (hash.Hash, error) {
-	switch strings.ToLower(s.ChecksumType) {
+func (d *Download) Hash() (hash.Hash, error) {
+	switch strings.ToLower(d.ChecksumType) {
 	case "md5":
 		return md5.New(), nil
 	case "sha1":
@@ -99,5 +88,15 @@ func (s *Download) Hash() (hash.Hash, error) {
 		return sha512.New(), nil
 	}
 
-	return nil, errors.New(fmt.Sprintf("Invalid checksum type %s", s.ChecksumType))
+	return nil, errors.New(fmt.Sprintf("Invalid checksum type %s", d.ChecksumType))
+}
+
+func (d *Download) AddStatusUpdate(statusUpdate *StatusUpdate) {
+	var beginningOfTime time.Time
+	if d.TimeStarted == beginningOfTime {
+		d.TimeStarted = statusUpdate.Time
+	}
+	d.Checksum = statusUpdate.Checksum
+	d.Finished = statusUpdate.Finished
+	d.Status.AddStatusUpdate(statusUpdate)
 }

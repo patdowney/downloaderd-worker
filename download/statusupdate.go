@@ -5,7 +5,7 @@ import (
 )
 
 type StatusUpdate struct {
-	DownloadId string
+	DownloadID string
 	BytesRead  uint64
 	Checksum   string
 	Time       time.Time

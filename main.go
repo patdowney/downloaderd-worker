@@ -17,6 +17,7 @@ type Config struct {
 	DownloadDirectory string
 	DownloadDataFile  string
 	RequestDataFile   string
+	HookDataFile      string
 
 	AccessLogWriter io.Writer
 	ErrorLogWriter  io.Writer
@@ -35,6 +36,7 @@ func ParseArgs() *Config {
 	flag.StringVar(&c.DownloadDirectory, "downloaddir", "./download-data", "root directory of save tree.")
 	flag.StringVar(&c.DownloadDataFile, "downloaddata", "downloads.json", "download database file")
 	flag.StringVar(&c.RequestDataFile, "requestdata", "requests.json", "request database file")
+	flag.StringVar(&c.HookDataFile, "hookdata", "hooks.json", "hooks database file")
 	flag.Parse()
 
 	c.AccessLogWriter = os.Stdout
@@ -58,14 +60,22 @@ func CreateServer(config *Config) {
 		log.Printf("init-request-store-error: %v", err)
 	}
 
+	hookStore, err := local.NewHookStore(config.HookDataFile)
+	if err != nil {
+		log.Printf("init-hook-store-error: %v", err)
+	}
+
 	downloadService := download.NewDownloadService(downloadStore, fileStore, config.WorkerCount, config.QueueLength)
+	downloadService.HookService = download.NewHookService(hookStore)
+
+	requestService := download.NewRequestService(requestStore, downloadService)
+
 	downloadService.Start()
+
 	downloadResource := dh.NewDownloadResource(downloadService)
 	s.AddResource("/download", downloadResource)
 
-	requestService := download.NewRequestService(requestStore, downloadService)
 	requestResource := dh.NewRequestResource(requestService)
-
 	s.AddResource("/request", requestResource)
 
 	err = s.ListenAndServe()

@@ -30,7 +30,7 @@ func (s *RequestService) ProcessNewRequest(downloadRequest *Request) (*Request, 
 		return nil, err
 	}
 
-	downloadRequest.Id = id
+	downloadRequest.ID = id
 	downloadRequest.TimeRequested = s.Clock.Now()
 
 	m, err := GetMetadataFromHead(s.Clock.Now(), downloadRequest)
@@ -43,7 +43,7 @@ func (s *RequestService) ProcessNewRequest(downloadRequest *Request) (*Request, 
 			if err != nil {
 				downloadRequest.AddError(err, s.Clock.Now())
 			}
-			downloadRequest.DownloadId = download.Id
+			downloadRequest.DownloadID = download.ID
 		} else {
 			em := fmt.Sprintf("non-200 response from source")
 			err = errors.New(em)
@@ -64,6 +64,6 @@ func (s *RequestService) ListAll() ([]*Request, error) {
 	return s.requestStore.ListAll()
 }
 
-func (s *RequestService) FindById(id string) (*Request, error) {
-	return s.requestStore.FindById(id)
+func (s *RequestService) FindByID(id string) (*Request, error) {
+	return s.requestStore.FindByID(id)
 }
