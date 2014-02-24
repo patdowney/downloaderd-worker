@@ -48,7 +48,7 @@ func (r *RequestResource) populateLinks(req *http.Request, request *api.Request)
 }
 
 func (r *RequestResource) WrapError(err error) *api.Error {
-	return api.NewError(common.NewErrorWrapper(err, r.Clock.Now()))
+	return download.ToAPIError(common.NewErrorWrapper(err, r.Clock.Now()))
 }
 
 func (r *RequestResource) Index() http.HandlerFunc {
@@ -67,7 +67,7 @@ func (r *RequestResource) Index() http.HandlerFunc {
 			}
 		} else {
 			rw.WriteHeader(http.StatusOK)
-			rl := api.NewRequestList(&requestList)
+			rl := download.ToAPIRequestList(&requestList)
 			r.populateListLinks(req, rl)
 			encErr := encoder.Encode(rl)
 			if encErr != nil {
@@ -96,7 +96,7 @@ func (r *RequestResource) Get() http.HandlerFunc {
 			}
 		} else if downloadRequest != nil {
 			rw.WriteHeader(http.StatusOK)
-			dr := api.NewRequest(downloadRequest)
+			dr := download.ToAPIRequest(downloadRequest)
 			r.populateLinks(req, dr)
 			encErr := encoder.Encode(dr)
 			if encErr != nil {
@@ -164,7 +164,7 @@ func (r *RequestResource) Post() http.HandlerFunc {
 			return
 		}
 
-		inReq := apiIncomingRequest.ToDownloadRequest()
+		inReq := download.FromAPIIncomingRequest(apiIncomingRequest)
 		downloadRequest, err := r.RequestService.ProcessNewRequest(inReq)
 
 		if err != nil {
@@ -182,7 +182,7 @@ func (r *RequestResource) Post() http.HandlerFunc {
 			rw.Header().Set("Location", newURL.String())
 			rw.WriteHeader(http.StatusAccepted)
 			encoder := json.NewEncoder(rw)
-			dr := api.NewRequest(downloadRequest)
+			dr := download.ToAPIRequest(downloadRequest)
 			r.populateLinks(req, dr)
 			encErr := encoder.Encode(dr)
 			if encErr != nil {

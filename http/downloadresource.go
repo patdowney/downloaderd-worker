@@ -48,7 +48,7 @@ func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
 }
 
 func (r *DownloadResource) WrapError(err error) *api.Error {
-	return api.NewError(common.NewErrorWrapper(err, r.Clock.Now()))
+	return download.ToAPIError(common.NewErrorWrapper(err, r.Clock.Now()))
 }
 
 func (r *DownloadResource) Index() http.HandlerFunc {
@@ -67,7 +67,7 @@ func (r *DownloadResource) Index() http.HandlerFunc {
 			}
 		} else {
 			rw.WriteHeader(http.StatusOK)
-			dl := api.NewDownloadList(&downloadList)
+			dl := download.ToAPIDownloadList(&downloadList)
 			r.populateListLinks(req, dl)
 			encErr := encoder.Encode(dl)
 			if encErr != nil {
@@ -134,7 +134,7 @@ func (r *DownloadResource) Get() http.HandlerFunc {
 		vars := mux.Vars(req)
 		downloadID := vars["id"]
 
-		download, err := r.DownloadService.FindByID(downloadID)
+		foundDownload, err := r.DownloadService.FindByID(downloadID)
 
 		encoder := json.NewEncoder(rw)
 		rw.Header().Set("Content-Type", "application/json")
@@ -146,9 +146,9 @@ func (r *DownloadResource) Get() http.HandlerFunc {
 			if encErr != nil {
 				log.Printf("encoder-error: %v", encErr)
 			}
-		} else if download != nil {
+		} else if foundDownload != nil {
 			rw.WriteHeader(http.StatusOK)
-			d := api.NewDownload(download)
+			d := download.ToAPIDownload(foundDownload)
 			r.populateLinks(req, d)
 			encErr := encoder.Encode(d)
 			if encErr != nil {

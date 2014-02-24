@@ -54,7 +54,7 @@ func (s *HookService) notifyHook(hook *Hook, download *Download) (*HookResult, e
 	hr := NewHookResult()
 	hr.Time = s.Clock.Now()
 
-	jsonBytes, err := json.Marshal(download)
+	jsonBytes, err := json.Marshal(ToAPIDownload(download))
 	if err != nil {
 		return nil, err
 	}

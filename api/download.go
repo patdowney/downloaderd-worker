@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/patdowney/downloaderd/download"
 	"net/http"
 	"time"
 )
@@ -25,40 +24,7 @@ type Download struct {
 	Links []Link `json:"links,omitempty"`
 }
 
-func NewDownloadList(origList *[]*download.Download) *[]*Download {
-	rs := make([]*Download, len(*origList))
-
-	for i, r := range *origList {
-		rs[i] = NewDownload(r)
-	}
-
-	return &rs
-}
-
-func NewDownload(dd *download.Download) *Download {
-	d := &Download{
-		ID:            dd.ID,
-		URL:           dd.URL,
-		Checksum:      dd.Checksum,
-		ChecksumType:  dd.ChecksumType,
-		TimeStarted:   dd.TimeStarted,
-		TimeRequested: dd.TimeRequested,
-		Finished:      dd.Finished,
-		Links:         make([]Link, 0)}
-
-	if dd.Metadata != nil {
-		d.Metadata = NewMetadata(dd.Metadata)
-	}
-
-	if dd.Status != nil {
-		d.BytesRead = dd.Status.BytesRead
-		d.TimeUpdated = dd.Status.UpdateTime
-
-		d.Duration = dd.Duration() / time.Millisecond
-		d.PercentComplete = dd.PercentComplete()
-		d.AverageBytesPerSecond = dd.AverageBytesPerSecond()
-	}
-
+func (d *Download) ResolveLinks(linkResolver *LinkResolver, req *http.Request) {
 	// somehow populate links
 	d.Links = append(d.Links,
 		Link{Relation: "self", Value: d.ID,
@@ -67,9 +33,5 @@ func NewDownload(dd *download.Download) *Download {
 		Link{Relation: "data", Value: d.ID,
 			ValueID: "id", RouteName: "download-data"})
 
-	return d
-}
-
-func (d *Download) ResolveLinks(linkResolver *LinkResolver, req *http.Request) {
 	linkResolver.ResolveLinks(req, &d.Links)
 }
