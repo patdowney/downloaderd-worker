@@ -13,7 +13,7 @@ import (
 )
 
 type Download struct {
-	ID            string
+	ID            string `gorethink:"id,omitempty"`
 	URL           string
 	Checksum      string
 	ChecksumType  string
@@ -93,7 +93,7 @@ func (d *Download) Hash() (hash.Hash, error) {
 
 func (d *Download) AddStatusUpdate(statusUpdate *StatusUpdate) {
 	var beginningOfTime time.Time
-	if d.TimeStarted == beginningOfTime {
+	if d.TimeStarted.UTC() == beginningOfTime.UTC() {
 		d.TimeStarted = statusUpdate.Time
 	}
 	d.Checksum = statusUpdate.Checksum

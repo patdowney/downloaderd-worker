@@ -2,6 +2,7 @@ package download
 
 import (
 	"io"
+	//	"log"
 
 	"github.com/patdowney/downloaderd/common"
 )
@@ -131,8 +132,24 @@ func (s *DownloadService) ProcessRequest(downloadRequest *Request) (*Download, e
 	return download, err
 }
 
+func (s *DownloadService) ListFinished() ([]*Download, error) {
+	return s.downloadStore.FindFinished()
+}
+
+func (s *DownloadService) ListNotFinished() ([]*Download, error) {
+	return s.downloadStore.FindNotFinished()
+}
+
+func (s *DownloadService) ListInProgress() ([]*Download, error) {
+	return s.downloadStore.FindInProgress()
+}
+
+func (s *DownloadService) ListWaiting() ([]*Download, error) {
+	return s.downloadStore.FindWaiting()
+}
+
 func (s *DownloadService) ListAll() ([]*Download, error) {
-	return s.downloadStore.ListAll()
+	return s.downloadStore.FindAll()
 }
 
 func (s *DownloadService) FindByID(id string) (*Download, error) {

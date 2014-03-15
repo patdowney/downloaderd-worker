@@ -6,18 +6,21 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/patdowney/downloaderd/api"
 	"github.com/patdowney/downloaderd/common"
 )
 
 type HookService struct {
-	Clock     common.Clock
-	hookStore HookStore
+	Clock        common.Clock
+	hookStore    HookStore
+	linkResolver *api.LinkResolver
 }
 
-func NewHookService(hookStore HookStore) *HookService {
+func NewHookService(hookStore HookStore, linkResolver *api.LinkResolver) *HookService {
 	s := HookService{
-		Clock:     &common.RealClock{},
-		hookStore: hookStore}
+		Clock:        &common.RealClock{},
+		hookStore:    hookStore,
+		linkResolver: linkResolver}
 
 	return &s
 }
@@ -42,7 +45,7 @@ func (s *HookService) notifyHooks(hooks []*Hook, download *Download) {
 		if h.Result == nil {
 			hr, err := s.notifyHook(h, download)
 			if err != nil {
-				log.Printf("notify-hook: url: %s, %v", h.URL, err)
+				log.Printf("notify-hook: downloadID: %s, url: %s, %v", download.ID, h.URL, err)
 			}
 			h.Result = hr
 			s.hookStore.Update(h)
@@ -54,7 +57,9 @@ func (s *HookService) notifyHook(hook *Hook, download *Download) (*HookResult, e
 	hr := NewHookResult()
 	hr.Time = s.Clock.Now()
 
-	jsonBytes, err := json.Marshal(ToAPIDownload(download))
+	apiDownload := ToAPIDownload(download)
+	apiDownload.ResolveLinks(s.linkResolver, nil)
+	jsonBytes, err := json.Marshal(apiDownload)
 	if err != nil {
 		return nil, err
 	}

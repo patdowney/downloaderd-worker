@@ -21,10 +21,11 @@ type RequestResource struct {
 	linkResolver   *api.LinkResolver
 }
 
-func NewRequestResource(requestService *download.RequestService) *RequestResource {
+func NewRequestResource(requestService *download.RequestService, linkResolver *api.LinkResolver) *RequestResource {
 	return &RequestResource{
 		Clock:          &common.RealClock{},
-		RequestService: requestService}
+		RequestService: requestService,
+		linkResolver:   linkResolver}
 }
 
 func (r *RequestResource) RegisterRoutes(parentRouter *mux.Router) {
@@ -34,7 +35,6 @@ func (r *RequestResource) RegisterRoutes(parentRouter *mux.Router) {
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("request")
 
 	r.router = parentRouter
-	r.linkResolver = api.NewLinkResolver(parentRouter)
 }
 
 func (r *RequestResource) populateListLinks(req *http.Request, requestList *[]*api.Request) {

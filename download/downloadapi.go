@@ -37,7 +37,7 @@ func ToAPIDownload(dd *Download) *api.Download {
 
 		d.Duration = dd.Duration() / time.Millisecond
 		d.PercentComplete = dd.PercentComplete()
-		d.AverageBytesPerSecond = dd.AverageBytesPerSecond()
+		//		d.AverageBytesPerSecond = dd.AverageBytesPerSecond()
 	}
 
 	return d

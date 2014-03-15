@@ -19,7 +19,7 @@ type Metadata struct {
 	Expires      time.Time
 	StatusCode   int
 
-	Errors []error
+	Errors []string
 }
 
 func GetMetadataFromHead(requestTime time.Time, request *Request) (*Metadata, error) {
@@ -45,24 +45,24 @@ func NewMetadata(request *Request, res *http.Response, requestTime time.Time) *M
 		ETag:          res.Header.Get("ETag"),
 		Server:        res.Header.Get("Server"),
 		StatusCode:    res.StatusCode,
-		Errors:        make([]error, 0)}
+		Errors:        make([]string, 0)}
 
 	var err error
 	// reference time: Mon Jan 2 15:04:05 -0700 MST 2006
 	contentLengthHeader := res.Header.Get("Content-Length")
 	m.Size, err = strconv.ParseUint(contentLengthHeader, 10, 64)
 	if err != nil {
-		m.Errors = append(m.Errors, err)
+		m.Errors = append(m.Errors, err.Error())
 	}
 
 	m.LastModified, err = ParseTime(res.Header.Get("Last-Modified"))
 	if err != nil {
-		m.Errors = append(m.Errors, err)
+		m.Errors = append(m.Errors, err.Error())
 	}
 
 	m.Expires, err = ParseTime(res.Header.Get("Expires"))
 	if err != nil {
-		m.Errors = append(m.Errors, err)
+		m.Errors = append(m.Errors, err.Error())
 	}
 
 	return m

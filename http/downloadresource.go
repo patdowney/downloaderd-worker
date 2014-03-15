@@ -20,10 +20,11 @@ type DownloadResource struct {
 	linkResolver    *api.LinkResolver
 }
 
-func NewDownloadResource(downloadService *download.DownloadService) *DownloadResource {
+func NewDownloadResource(downloadService *download.DownloadService, linkResolver *api.LinkResolver) *DownloadResource {
 	return &DownloadResource{
 		Clock:           &common.RealClock{},
-		DownloadService: downloadService}
+		DownloadService: downloadService,
+		linkResolver:    linkResolver}
 }
 
 func (r *DownloadResource) populateListLinks(req *http.Request, downloadList *[]*api.Download) {
@@ -37,7 +38,13 @@ func (r *DownloadResource) populateLinks(req *http.Request, download *api.Downlo
 }
 
 func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
-	parentRouter.HandleFunc("/", r.Index()).Methods("GET", "HEAD")
+	parentRouter.HandleFunc("/", r.Index(r.AllIndex())).Methods("GET", "HEAD")
+	parentRouter.HandleFunc("/finished", r.Index(r.FinishedIndex())).Methods("GET", "HEAD")
+	parentRouter.HandleFunc("/notfinished", r.Index(r.NotFinishedIndex())).Methods("GET", "HEAD")
+	parentRouter.HandleFunc("/inprogress", r.Index(r.InProgressIndex())).Methods("GET", "HEAD")
+	parentRouter.HandleFunc("/waiting", r.Index(r.WaitingIndex())).Methods("GET", "HEAD")
+	parentRouter.HandleFunc("/all", r.Index(r.AllIndex())).Methods("GET", "HEAD")
+
 	// regexp matches ids that look like '8671301b-49fa-416c-4bc0-2869963779e5'
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("download")
 	//parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/callback/{requestID:[a-f0-9-]{36}}", r.GetCallbackStatus()).Methods("GET", "HEAD").Name("callback-status")
@@ -51,9 +58,27 @@ func (r *DownloadResource) WrapError(err error) *api.Error {
 	return download.ToAPIError(common.NewErrorWrapper(err, r.Clock.Now()))
 }
 
-func (r *DownloadResource) Index() http.HandlerFunc {
+type IndexFunc func() ([]*download.Download, error)
+
+func (r *DownloadResource) FinishedIndex() IndexFunc {
+	return r.DownloadService.ListFinished
+}
+func (r *DownloadResource) NotFinishedIndex() IndexFunc {
+	return r.DownloadService.ListNotFinished
+}
+func (r *DownloadResource) InProgressIndex() IndexFunc {
+	return r.DownloadService.ListInProgress
+}
+func (r *DownloadResource) WaitingIndex() IndexFunc {
+	return r.DownloadService.ListWaiting
+}
+func (r *DownloadResource) AllIndex() IndexFunc {
+	return r.DownloadService.ListAll
+}
+
+func (r *DownloadResource) Index(indexFunc IndexFunc) http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
-		downloadList, err := r.DownloadService.ListAll()
+		downloadList, err := indexFunc() //r.DownloadService.ListAll()
 
 		encoder := json.NewEncoder(rw)
 		rw.Header().Set("Content-Type", "application/json")
@@ -104,6 +129,7 @@ func (r *DownloadResource) GetData() http.HandlerFunc {
 					if encErr != nil {
 						log.Printf("encoder-error: %v", encErr)
 					}
+					return
 				}
 
 				meta := download.Metadata
@@ -155,7 +181,7 @@ func (r *DownloadResource) Get() http.HandlerFunc {
 				log.Printf("encoder-error: %v", encErr)
 			}
 		} else {
-			errMessage := fmt.Sprintf("Unable to find order with id:%s", downloadID)
+			errMessage := fmt.Sprintf("unable to find download with id:%s", downloadID)
 			log.Printf("server-error: %v", errMessage)
 
 			rw.WriteHeader(http.StatusNotFound)

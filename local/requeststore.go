@@ -5,14 +5,14 @@ import (
 	"sync"
 )
 
-type LocalRequestStore struct {
+type RequestStore struct {
 	LocalJSONStore
 	sync.RWMutex
 	repository []*download.Request
 }
 
-func NewRequestStore(dataFile string) (download.RequestStore, error) {
-	requestStore := &LocalRequestStore{
+func NewRequestStore(dataFile string) (*RequestStore, error) {
+	requestStore := &RequestStore{
 		repository: make([]*download.Request, 0)}
 
 	requestStore.DataFile = dataFile
@@ -22,7 +22,7 @@ func NewRequestStore(dataFile string) (download.RequestStore, error) {
 	return requestStore, err
 }
 
-func (s *LocalRequestStore) Add(request *download.Request) error {
+func (s *RequestStore) Add(request *download.Request) error {
 	s.Lock()
 	defer s.Unlock()
 	s.repository = append(s.repository, request)
@@ -32,7 +32,7 @@ func (s *LocalRequestStore) Add(request *download.Request) error {
 	return err
 }
 
-func (s *LocalRequestStore) FindByID(requestID string) (*download.Request, error) {
+func (s *RequestStore) FindByID(requestID string) (*download.Request, error) {
 	s.RLock()
 	defer s.RUnlock()
 	for _, request := range s.repository {
@@ -43,7 +43,7 @@ func (s *LocalRequestStore) FindByID(requestID string) (*download.Request, error
 	return nil, nil
 }
 
-func (s *LocalRequestStore) FindByResourceKey(resourceKey download.ResourceKey) ([]*download.Request, error) {
+func (s *RequestStore) FindByResourceKey(resourceKey download.ResourceKey) ([]*download.Request, error) {
 	s.RLock()
 	defer s.RUnlock()
 	results := make([]*download.Request, 0, len(s.repository))
@@ -55,7 +55,7 @@ func (s *LocalRequestStore) FindByResourceKey(resourceKey download.ResourceKey) 
 	return results, nil
 }
 
-func (s *LocalRequestStore) ListAll() ([]*download.Request, error) {
+func (s *RequestStore) FindAll() ([]*download.Request, error) {
 	s.RLock()
 	defer s.RUnlock()
 

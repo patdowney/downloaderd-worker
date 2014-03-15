@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/patdowney/downloaderd/api"
 	"github.com/patdowney/downloaderd/download"
 	dh "github.com/patdowney/downloaderd/http"
 	"github.com/patdowney/downloaderd/local"
@@ -30,7 +31,7 @@ func ConfigureLogging(config *Config) {
 
 func ParseArgs() *Config {
 	c := &Config{}
-	flag.StringVar(&c.ListenAddress, "http", ":8080", "address to listen on")
+	flag.StringVar(&c.ListenAddress, "http", "localhost:8080", "address to listen on")
 	flag.UintVar(&c.WorkerCount, "workers", 2, "number of workers to use")
 	flag.UintVar(&c.QueueLength, "queuelength", 32, "size of download queue")
 	flag.StringVar(&c.DownloadDirectory, "downloaddir", "./download-data", "root directory of save tree.")
@@ -65,18 +66,22 @@ func CreateServer(config *Config) {
 		log.Printf("init-hook-store-error: %v", err)
 	}
 
+	linkResolver := api.NewLinkResolver(s.Router)
+	linkResolver.DefaultScheme = "http"
+	linkResolver.DefaultHost = config.ListenAddress
+
 	downloadService := download.NewDownloadService(downloadStore, fileStore, config.WorkerCount, config.QueueLength)
-	downloadService.HookService = download.NewHookService(hookStore)
+	downloadService.HookService = download.NewHookService(hookStore, linkResolver)
 
 	requestService := download.NewRequestService(requestStore, downloadService)
 
-	downloadService.Start()
-
-	downloadResource := dh.NewDownloadResource(downloadService)
+	downloadResource := dh.NewDownloadResource(downloadService, linkResolver)
 	s.AddResource("/download", downloadResource)
 
-	requestResource := dh.NewRequestResource(requestService)
+	requestResource := dh.NewRequestResource(requestService, linkResolver)
 	s.AddResource("/request", requestResource)
+
+	downloadService.Start()
 
 	err = s.ListenAndServe()
 	log.Printf("init-listen-error: %v", err)

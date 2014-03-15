@@ -17,11 +17,9 @@ type Download struct {
 	TimeUpdated   time.Time `json:"time_updated,omitempty"`
 	Finished      bool      `json:"finished"`
 
-	Duration              time.Duration `json:"duration,omitempty"`
-	PercentComplete       float32       `json:"percent_complete,omitempty"`
-	AverageBytesPerSecond float32       `json:"avg_bytes_per_second,omitempty"`
-
-	Links []Link `json:"links,omitempty"`
+	Duration        time.Duration `json:"duration,omitempty"`
+	PercentComplete float32       `json:"percent_complete,omitempty"`
+	Links           []Link        `json:"links,omitempty"`
 }
 
 func (d *Download) ResolveLinks(linkResolver *LinkResolver, req *http.Request) {

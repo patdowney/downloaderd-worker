@@ -12,21 +12,21 @@ import (
 	"strings"
 )
 
-type LocalFileStore struct {
+type FileStore struct {
 	RootDirectory string
 }
 
-func NewFileStore(rootDirectory string) download.FileStore {
-	return &LocalFileStore{RootDirectory: rootDirectory}
+func NewFileStore(rootDirectory string) *FileStore {
+	return &FileStore{RootDirectory: rootDirectory}
 }
 
-func (us *LocalFileStore) SavePathFromURL(sourceURL string) string {
+func (us *FileStore) SavePathFromURL(sourceURL string) string {
 	urlObj, _ := url.Parse(sourceURL)
 
 	return filepath.Join(urlObj.Host, urlObj.Path)
 }
 
-func (us *LocalFileStore) SavePathForDownload(download *download.Download) (string, error) {
+func (us *FileStore) SavePathForDownload(download *download.Download) (string, error) {
 	savePathFromURL := us.SavePathFromURL(download.URL)
 	cleanRootDirectory := filepath.Clean(us.RootDirectory)
 	dirtySavePath := filepath.Join(us.RootDirectory, savePathFromURL)
@@ -40,7 +40,7 @@ func (us *LocalFileStore) SavePathForDownload(download *download.Download) (stri
 	return cleanSavePath, nil
 }
 
-func (us *LocalFileStore) GetReader(download *download.Download) (io.ReadCloser, error) {
+func (us *FileStore) GetReader(download *download.Download) (io.ReadCloser, error) {
 	dataPath, err := us.SavePathForDownload(download)
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func (us *LocalFileStore) GetReader(download *download.Download) (io.ReadCloser,
 	return openFile, nil
 }
 
-func (us *LocalFileStore) GetWriter(download *download.Download) (io.WriteCloser, error) {
+func (us *FileStore) GetWriter(download *download.Download) (io.WriteCloser, error) {
 	savePath, err := us.SavePathForDownload(download)
 	if err != nil {
 		return nil, err

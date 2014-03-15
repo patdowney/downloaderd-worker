@@ -5,14 +5,14 @@ import (
 	"sync"
 )
 
-type LocalHookStore struct {
+type HookStore struct {
 	LocalJSONStore
 	sync.RWMutex
 	repository []*download.Hook
 }
 
-func NewHookStore(dataFile string) (download.HookStore, error) {
-	hookStore := &LocalHookStore{
+func NewHookStore(dataFile string) (*HookStore, error) {
+	hookStore := &HookStore{
 		repository: make([]*download.Hook, 0)}
 
 	hookStore.DataFile = dataFile
@@ -22,7 +22,7 @@ func NewHookStore(dataFile string) (download.HookStore, error) {
 	return hookStore, err
 }
 
-func (s *LocalHookStore) Add(hook *download.Hook) error {
+func (s *HookStore) Add(hook *download.Hook) error {
 	s.Lock()
 	defer s.Unlock()
 	s.repository = append(s.repository, hook)
@@ -32,7 +32,7 @@ func (s *LocalHookStore) Add(hook *download.Hook) error {
 	return err
 }
 
-func (s *LocalHookStore) Update(h *download.Hook) error {
+func (s *HookStore) Update(h *download.Hook) error {
 	s.Lock()
 	defer s.Unlock()
 
@@ -52,7 +52,7 @@ func (s *LocalHookStore) Update(h *download.Hook) error {
 	return err
 }
 
-func (s *LocalHookStore) FindByDownloadID(downloadID string) ([]*download.Hook, error) {
+func (s *HookStore) FindByDownloadID(downloadID string) ([]*download.Hook, error) {
 	s.RLock()
 	defer s.RUnlock()
 	results := make([]*download.Hook, 0, len(s.repository))
@@ -64,7 +64,7 @@ func (s *LocalHookStore) FindByDownloadID(downloadID string) ([]*download.Hook, 
 	return results, nil
 }
 
-func (s *LocalHookStore) FindByRequestID(requestID string) ([]*download.Hook, error) {
+func (s *HookStore) FindByRequestID(requestID string) ([]*download.Hook, error) {
 	s.RLock()
 	defer s.RUnlock()
 	results := make([]*download.Hook, 0, len(s.repository))
@@ -76,7 +76,7 @@ func (s *LocalHookStore) FindByRequestID(requestID string) ([]*download.Hook, er
 	return results, nil
 }
 
-func (s *LocalHookStore) ListAll() ([]*download.Hook, error) {
+func (s *HookStore) ListAll() ([]*download.Hook, error) {
 	s.RLock()
 	defer s.RUnlock()
 

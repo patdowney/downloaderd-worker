@@ -7,16 +7,29 @@ import (
 )
 
 type LinkResolver struct {
-	Router *mux.Router
-	req    *http.Request
+	DefaultScheme string
+	DefaultHost   string
+	Router        *mux.Router
+	req           *http.Request
 }
 
 func (r *LinkResolver) urlScheme(req *http.Request) string {
-	scheme := "http"
-	if req.TLS != nil {
-		scheme = "https"
+	scheme := r.DefaultScheme
+	if req != nil {
+		scheme = "http"
+		if req.TLS != nil {
+			scheme = "https"
+		}
 	}
 	return scheme
+}
+
+func (r *LinkResolver) urlHost(req *http.Request) string {
+	host := r.DefaultHost
+	if req != nil {
+		host = req.Host
+	}
+	return host
 }
 
 func (r *LinkResolver) ResolveLinks(req *http.Request, links *[]Link) {
@@ -32,7 +45,7 @@ func (r *LinkResolver) ResolveLink(req *http.Request, link *Link) {
 		if err != nil {
 			log.Print(err)
 		} else {
-			u.Host = req.Host
+			u.Host = r.urlHost(req)
 			u.Scheme = r.urlScheme(req)
 			link.Href = u.String()
 		}
@@ -40,6 +53,6 @@ func (r *LinkResolver) ResolveLink(req *http.Request, link *Link) {
 }
 
 func NewLinkResolver(router *mux.Router) *LinkResolver {
-	r := LinkResolver{Router: router}
+	r := LinkResolver{Router: router, DefaultScheme: "http", DefaultHost: "localhost:8080"}
 	return &r
 }

@@ -2,7 +2,8 @@ package local
 
 import (
 	"encoding/json"
-	"log"
+	"errors"
+	"io"
 	"os"
 	"sync"
 )
@@ -12,41 +13,43 @@ type LocalJSONStore struct {
 	DataFile string
 }
 
+func (l *LocalJSONStore) writeToWriter(w io.Writer, data interface{}) error {
+	encoder := json.NewEncoder(w)
+	return encoder.Encode(data)
+
+}
+
 func (l *LocalJSONStore) SaveToDisk(data interface{}) error {
-	var err error
-	if l.DataFile != "" {
-		l.RLock()
-		defer l.RUnlock()
-		var openFile *os.File
-		openFile, err = os.Create(l.DataFile)
-		if err == nil {
-			if openFile != nil {
-				encoder := json.NewEncoder(openFile)
-				err = encoder.Encode(data)
-				if err != nil {
-					log.Printf("decode-error: %v", err)
-				}
-			}
-		}
+	if l.DataFile == "" {
+		return errors.New("no datafile specified for json store.")
 	}
-	return err
+
+	l.RLock()
+	defer l.RUnlock()
+
+	openFile, err := os.Create(l.DataFile)
+	if err != nil {
+		return err
+	}
+	defer openFile.Close()
+
+	return l.writeToWriter(openFile, data)
 }
 
 func (l *LocalJSONStore) LoadFromDisk(data interface{}) error {
-	var err error
-	if l.DataFile != "" {
-		l.Lock()
-		defer l.Unlock()
-
-		openFile, err := os.Open(l.DataFile)
-		if err == nil {
-			encoder := json.NewDecoder(openFile)
-			err = encoder.Decode(data)
-			if err != nil {
-				log.Printf("decode-error: %v", err)
-			}
-		}
+	if l.DataFile == "" {
+		return nil
 	}
+	l.Lock()
+	defer l.Unlock()
 
-	return err
+	openFile, err := os.Open(l.DataFile)
+	if err != nil {
+		return err
+	}
+	defer openFile.Close()
+
+	encoder := json.NewDecoder(openFile)
+
+	return encoder.Decode(data)
 }

@@ -61,7 +61,7 @@ func (s *RequestService) ProcessNewRequest(downloadRequest *Request) (*Request, 
 }
 
 func (s *RequestService) ListAll() ([]*Request, error) {
-	return s.requestStore.ListAll()
+	return s.requestStore.FindAll()
 }
 
 func (s *RequestService) FindByID(id string) (*Request, error) {
