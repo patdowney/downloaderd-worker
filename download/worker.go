@@ -73,11 +73,11 @@ func (w Worker) SaveWithStatus(download *Download) error {
 	defer statusWriter.Close()
 
 	outputWriter, err := w.FileStore.GetWriter(download)
-	defer outputWriter.Close()
 	if err != nil {
 		w.SendError(download.ID, err)
 		return err
 	}
+	defer outputWriter.Close()
 
 	return w.Save(download, outputWriter, statusWriter)
 }

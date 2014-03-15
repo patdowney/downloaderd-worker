@@ -39,8 +39,13 @@ func (s *DownloadStore) Update(download *download.Download) error {
 	return err
 }
 
+func (s *DownloadStore) purgeIncomplete() error {
+	s.baseTerm().Filter(IsFinished().And(IsIncomplete())).Delete().RunWrite(s.Session)
+	return nil
+}
+
 func (s *DownloadStore) purgeUnfinished() error {
-	s.baseTerm().Filter(IsNotFinished()).Delete().Run(s.Session)
+	s.baseTerm().Filter(IsNotFinished()).Delete().RunWrite(s.Session)
 	return nil
 }
 
@@ -136,6 +141,7 @@ func (s *DownloadStore) Init() error {
 	s.createIndexes()
 
 	s.purgeUnfinished()
+	s.purgeIncomplete()
 
 	return nil
 }

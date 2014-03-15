@@ -4,13 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+	"path/filepath"
+
 	"github.com/gorilla/mux"
 	"github.com/patdowney/downloaderd/api"
 	"github.com/patdowney/downloaderd/common"
 	"github.com/patdowney/downloaderd/download"
-	"io"
-	"log"
-	"net/http"
 )
 
 type DownloadResource struct {
@@ -78,7 +81,7 @@ func (r *DownloadResource) AllIndex() IndexFunc {
 
 func (r *DownloadResource) Index(indexFunc IndexFunc) http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
-		downloadList, err := indexFunc() //r.DownloadService.ListAll()
+		downloadList, err := indexFunc()
 
 		encoder := json.NewEncoder(rw)
 		rw.Header().Set("Content-Type", "application/json")
@@ -111,23 +114,23 @@ func (r *DownloadResource) GetData() http.HandlerFunc {
 		encoder := json.NewEncoder(rw)
 
 		if err != nil {
-			log.Printf("server-error: %v", err)
+			log.Printf("server-error-get-data(%s): %v", downloadID, err)
 			rw.Header().Set("Content-Type", "application/json")
 			rw.WriteHeader(http.StatusInternalServerError)
 			encErr := encoder.Encode(r.WrapError(err))
 			if encErr != nil {
-				log.Printf("encoder-error: %v", encErr)
+				log.Printf("encoder-error-get-data(%s): %v", downloadID, encErr)
 			}
 		} else if download != nil {
 			if download.Finished {
 				bufferedReader, err := r.DownloadService.GetReader(download)
 				if err != nil {
-					log.Printf("server-error: %v", err)
+					log.Printf("server-error-get-data(%s): %v", downloadID, err)
 					rw.Header().Set("Content-Type", "application/json")
 					rw.WriteHeader(http.StatusInternalServerError)
 					encErr := encoder.Encode(r.WrapError(err))
 					if encErr != nil {
-						log.Printf("encoder-error: %v", encErr)
+						log.Printf("encoder-error-get-data(%s): %v", downloadID, encErr)
 					}
 					return
 				}
@@ -142,6 +145,11 @@ func (r *DownloadResource) GetData() http.HandlerFunc {
 				} else {
 					rw.Header().Set("Content-Length", fmt.Sprintf("%d", download.Status.BytesRead))
 				}
+
+				u, _ := url.Parse(download.URL)
+				filename := filepath.Base(u.Path)
+				rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+
 				rw.WriteHeader(http.StatusOK)
 
 				io.Copy(rw, bufferedReader)
@@ -166,11 +174,11 @@ func (r *DownloadResource) Get() http.HandlerFunc {
 		rw.Header().Set("Content-Type", "application/json")
 
 		if err != nil {
-			log.Printf("server-error: %v", err)
+			log.Printf("server-error-get(%s): %v", downloadID, err)
 			rw.WriteHeader(http.StatusInternalServerError)
 			encErr := encoder.Encode(r.WrapError(err))
 			if encErr != nil {
-				log.Printf("encoder-error: %v", encErr)
+				log.Printf("encoder-error-get(%s): %v", downloadID, encErr)
 			}
 		} else if foundDownload != nil {
 			rw.WriteHeader(http.StatusOK)
@@ -178,16 +186,16 @@ func (r *DownloadResource) Get() http.HandlerFunc {
 			r.populateLinks(req, d)
 			encErr := encoder.Encode(d)
 			if encErr != nil {
-				log.Printf("encoder-error: %v", encErr)
+				log.Printf("encoder-error-get(%s): %v", downloadID, encErr)
 			}
 		} else {
 			errMessage := fmt.Sprintf("unable to find download with id:%s", downloadID)
-			log.Printf("server-error: %v", errMessage)
+			log.Printf("server-error-get(%s): %v", downloadID, errMessage)
 
 			rw.WriteHeader(http.StatusNotFound)
 			encErr := encoder.Encode(errors.New(errMessage))
 			if encErr != nil {
-				log.Printf("encoder-error: %v", encErr)
+				log.Printf("encoder-error-get(%s): %v", downloadID, encErr)
 			}
 		}
 	}

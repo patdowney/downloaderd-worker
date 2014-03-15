@@ -9,8 +9,9 @@ import (
 	"github.com/patdowney/downloaderd/api"
 	"github.com/patdowney/downloaderd/download"
 	dh "github.com/patdowney/downloaderd/http"
-	"github.com/patdowney/downloaderd/local"
+	//"github.com/patdowney/downloaderd/local"
 	"github.com/patdowney/downloaderd/rethinkdb"
+	"github.com/patdowney/downloaderd/s3"
 )
 
 type Config struct {
@@ -62,7 +63,12 @@ func CreateServer(config *Config) {
 		log.Printf("init-download-store-error: %v", err)
 	}
 
-	fileStore := local.NewFileStore(config.DownloadDirectory)
+	//fileStore := local.NewFileStore(config.DownloadDirectory)
+	c3 := s3.Config{}
+	fileStore, err := s3.NewFileStore(c3)
+	if err != nil {
+		log.Printf("s3-init-filestore-error: %v", err)
+	}
 
 	//requestStore, err := local.NewRequestStore(config.RequestDataFile)
 	requestStore, err := rethinkdb.NewRequestStore(c)
