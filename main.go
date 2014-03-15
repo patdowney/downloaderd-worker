@@ -2,13 +2,15 @@ package main
 
 import (
 	"flag"
+	"io"
+	"log"
+	"os"
+
 	"github.com/patdowney/downloaderd/api"
 	"github.com/patdowney/downloaderd/download"
 	dh "github.com/patdowney/downloaderd/http"
 	"github.com/patdowney/downloaderd/local"
-	"io"
-	"log"
-	"os"
+	"github.com/patdowney/downloaderd/rethinkdb"
 )
 
 type Config struct {
@@ -49,19 +51,27 @@ func ParseArgs() *Config {
 func CreateServer(config *Config) {
 	s := dh.NewServer(&dh.HTTPConfig{ListenAddress: config.ListenAddress})
 
-	downloadStore, err := local.NewDownloadStore(config.DownloadDataFile)
+	//downloadStore, err := local.NewDownloadStore(config.DownloadDataFile)
+	c := rethinkdb.Config{Address: "localhost:28015",
+		MaxIdle:   10,
+		MaxActive: 20,
+		Database:  "Downloaderd"}
+
+	downloadStore, err := rethinkdb.NewDownloadStore(c)
 	if err != nil {
 		log.Printf("init-download-store-error: %v", err)
 	}
 
 	fileStore := local.NewFileStore(config.DownloadDirectory)
 
-	requestStore, err := local.NewRequestStore(config.RequestDataFile)
+	//requestStore, err := local.NewRequestStore(config.RequestDataFile)
+	requestStore, err := rethinkdb.NewRequestStore(c)
 	if err != nil {
 		log.Printf("init-request-store-error: %v", err)
 	}
 
-	hookStore, err := local.NewHookStore(config.HookDataFile)
+	//hookStore, err := local.NewHookStore(config.HookDataFile)
+	hookStore, err := rethinkdb.NewHookStore(c)
 	if err != nil {
 		log.Printf("init-hook-store-error: %v", err)
 	}
