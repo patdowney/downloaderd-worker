@@ -20,7 +20,7 @@ func IsFinished() r.RqlTerm {
 
 func IsWaiting() r.RqlTerm {
 	var time time.Time
-	return r.Row.Field("TimeStarted").Lt(time).And(IsNotFinished())
+	return r.Row.Field("TimeStarted").Eq(time).And(IsNotFinished())
 }
 
 func InProgress() r.RqlTerm {

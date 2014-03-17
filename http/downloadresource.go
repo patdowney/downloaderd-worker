@@ -42,11 +42,21 @@ func (r *DownloadResource) populateLinks(req *http.Request, download *api.Downlo
 
 func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
 	parentRouter.HandleFunc("/", r.Index(r.AllIndex())).Methods("GET", "HEAD")
+
 	parentRouter.HandleFunc("/finished", r.Index(r.FinishedIndex())).Methods("GET", "HEAD")
+	parentRouter.HandleFunc("/finished/stats", r.Stats(r.FinishedIndex())).Methods("GET", "HEAD")
+
 	parentRouter.HandleFunc("/notfinished", r.Index(r.NotFinishedIndex())).Methods("GET", "HEAD")
+	parentRouter.HandleFunc("/notfinished/stats", r.Stats(r.NotFinishedIndex())).Methods("GET", "HEAD")
+
 	parentRouter.HandleFunc("/inprogress", r.Index(r.InProgressIndex())).Methods("GET", "HEAD")
+	parentRouter.HandleFunc("/inprogress/stats", r.Stats(r.InProgressIndex())).Methods("GET", "HEAD")
+
 	parentRouter.HandleFunc("/waiting", r.Index(r.WaitingIndex())).Methods("GET", "HEAD")
+	parentRouter.HandleFunc("/waiting/stats", r.Stats(r.WaitingIndex())).Methods("GET", "HEAD")
+
 	parentRouter.HandleFunc("/all", r.Index(r.AllIndex())).Methods("GET", "HEAD")
+	parentRouter.HandleFunc("/all/stats", r.Stats(r.AllIndex())).Methods("GET", "HEAD")
 
 	// regexp matches ids that look like '8671301b-49fa-416c-4bc0-2869963779e5'
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("download")
@@ -98,6 +108,36 @@ func (r *DownloadResource) Index(indexFunc IndexFunc) http.HandlerFunc {
 			dl := download.ToAPIDownloadList(&downloadList)
 			r.populateListLinks(req, dl)
 			encErr := encoder.Encode(dl)
+			if encErr != nil {
+				log.Printf("encoder-error: %v", encErr)
+			}
+		}
+	}
+}
+
+func (r *DownloadResource) Stats(indexFunc IndexFunc) http.HandlerFunc {
+	return func(rw http.ResponseWriter, req *http.Request) {
+		downloadList, err := indexFunc()
+
+		encoder := json.NewEncoder(rw)
+		rw.Header().Set("Content-Type", "application/json")
+
+		if err != nil {
+			log.Printf("server-error: %v", err)
+			rw.WriteHeader(http.StatusInternalServerError)
+			encErr := encoder.Encode(r.WrapError(err))
+			if encErr != nil {
+				log.Printf("encoder-error: %v", encErr)
+			}
+		} else {
+			rw.Header().Set("Access-Control-Allow-Origin", "*")
+
+			stats := download.DownloadStats{Clock: r.Clock}
+			stats.AddList(downloadList)
+			rw.WriteHeader(http.StatusOK)
+			ds := download.ToAPIDownloadStats(&stats)
+			//r.populateListLinks(req, dl)
+			encErr := encoder.Encode(ds)
 			if encErr != nil {
 				log.Printf("encoder-error: %v", encErr)
 			}
