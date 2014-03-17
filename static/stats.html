@@ -1,0 +1,87 @@
+<html>
+	<head>
+		<title></title>
+		<style>
+			body {
+				font-family: sans-serif;
+			}
+			.stat {
+				font-size: 48;
+			}
+		</style>
+	</head>
+	<body>
+		<script src="jquery-2.1.0.min.js"></script>
+	<div style="text-align: center;">
+		<span class="stat" id="wait-count"></span><br />
+		Downloads Waiting
+	</div>
+	<br/>
+	<div style="text-align: center;">
+		<span class="stat" id="inprogress-count"></span><br />
+		Downloads In Progress
+	</div>
+	<br/>
+	<div style="text-align: center;">
+		<span class="stat" id="inprogress-total-bytes-per-second"></span><br />
+		Current Download Speed (Bps)
+	</div>
+	<hr/>
+	<div style="text-align: center;">
+		<span class="stat" id="finished-total-bytes"></span><br />
+		Total Downloaded Bytes
+	</div>
+	<br/>
+	<div style="text-align: center;">
+		<span class="stat" id="finished-count"></span><br />
+		File Count
+	</div>
+
+
+	<script>
+		function updateFinishedStats(data) {
+			count = data.download_time_ms.count
+			$( "#finished-count" ).html(count);
+
+			$( "#finished-total-bytes" ).html(data.bytes_read.sum);
+
+		}
+
+		function updateWaitingStats(data) {
+			count = data.wait_time_ms.count
+			$( "#wait-count" ).html(count);
+		}
+
+		function updateInProgressStats(data) {
+			count = data.download_time_ms.count
+			$( "#inprogress-count" ).html(count);
+
+			mean_seconds = data.download_time_ms.sum / 1000
+			bytes_per_second = Number(data.bytes_read.sum / mean_seconds).toFixed(2);
+			total_bytes_per_second = Number(bytes_per_second * count).toFixed(2)
+			$( "#inprogress-total-bytes-per-second" ).html(total_bytes_per_second);
+
+		}
+
+		function fetchStats() {
+			$.ajax({
+  				url: "http://localhost:8082/download/inprogress/stats",
+  				success: updateInProgressStats
+			});
+			$.ajax({
+  				url: "http://localhost:8082/download/waiting/stats",
+  				success: updateWaitingStats
+			});
+			$.ajax({
+  				url: "http://localhost:8082/download/finished/stats",
+  				success: updateFinishedStats
+			});
+		}
+
+		$( document ).ready(function(){
+			fetchStats()
+			setInterval(fetchStats, 500)
+		});
+  </script>
+	</body>
+  </html>
