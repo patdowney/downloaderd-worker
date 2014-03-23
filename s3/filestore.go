@@ -67,13 +67,8 @@ func (s *FileStore) GetReader(download *download.Download) (io.ReadCloser, error
 	return s.bucket("downloaderd").GetReader(dataPath)
 }
 
-func (s *FileStore) s3upload(reader io.Reader, savePath string, length int64, contentType string) {
-	err := s.bucket("downloaderd").PutReader(savePath, reader, length, contentType, s3.BucketOwnerFull)
-
-	if err != nil {
-		log.Printf("s3-upload-error(%s): %v", savePath, err)
-	}
-
+func (s *FileStore) s3upload(reader io.Reader, savePath string, length int64, contentType string) error {
+	return s.bucket("downloaderd").PutReader(savePath, reader, length, contentType, s3.BucketOwnerFull)
 }
 
 func (s *FileStore) GetWriter(download *download.Download) (io.WriteCloser, error) {
@@ -85,7 +80,12 @@ func (s *FileStore) GetWriter(download *download.Download) (io.WriteCloser, erro
 
 	pipeReader, pipeWriter := io.Pipe()
 
-	go s.s3upload(pipeReader, savePath, int64(download.Metadata.Size), download.Metadata.MimeType)
+	go func() {
+		err := s.s3upload(pipeReader, savePath, int64(download.Metadata.Size), download.Metadata.MimeType)
+		if err != nil {
+			log.Printf("s3-upload-failed for download:%s, savePath:%s, error:%s", download.ID, savePath, err.Error())
+		}
+	}()
 
 	return pipeWriter, nil
 }
