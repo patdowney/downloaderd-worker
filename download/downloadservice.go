@@ -133,23 +133,23 @@ func (s *DownloadService) ProcessRequest(downloadRequest *Request) (*Download, e
 }
 
 func (s *DownloadService) ListFinished() ([]*Download, error) {
-	return s.downloadStore.FindFinished()
+	return s.downloadStore.FindFinished(0, 25)
 }
 
 func (s *DownloadService) ListNotFinished() ([]*Download, error) {
-	return s.downloadStore.FindNotFinished()
+	return s.downloadStore.FindNotFinished(0, 25)
 }
 
 func (s *DownloadService) ListInProgress() ([]*Download, error) {
-	return s.downloadStore.FindInProgress()
+	return s.downloadStore.FindInProgress(0, 25)
 }
 
 func (s *DownloadService) ListWaiting() ([]*Download, error) {
-	return s.downloadStore.FindWaiting()
+	return s.downloadStore.FindWaiting(0, 25)
 }
 
 func (s *DownloadService) ListAll() ([]*Download, error) {
-	return s.downloadStore.FindAll()
+	return s.downloadStore.FindAll(0, 25)
 }
 
 func (s *DownloadService) FindByID(id string) (*Download, error) {

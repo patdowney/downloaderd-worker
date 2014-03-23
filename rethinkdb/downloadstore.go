@@ -84,15 +84,15 @@ func (s *DownloadStore) FindByResourceKey(resourceKey download.ResourceKey) (*do
 	return s.getSingleDownload(resourceKeyLookup)
 }
 
-func (s *DownloadStore) getMultiDownload(term r.RqlTerm) ([]*download.Download, error) {
-	rows, err := term.Run(s.Session)
+func (s *DownloadStore) getMultiDownload(term r.RqlTerm, offset uint, count uint) ([]*download.Download, error) {
+	rows, err := term.Slice(offset, (offset + count)).Run(s.Session)
 	if err != nil {
 		results := make([]*download.Download, 0, 0)
 		return results, err
 	}
 
-	count, _ := rows.Count()
-	results := make([]*download.Download, 0, count)
+	resultCount, _ := rows.Count()
+	results := make([]*download.Download, 0, resultCount)
 
 	for rows.Next() {
 		var download download.Download
@@ -105,34 +105,34 @@ func (s *DownloadStore) getMultiDownload(term r.RqlTerm) ([]*download.Download, 
 	return results, nil
 }
 
-func (s *DownloadStore) FindWaiting() ([]*download.Download, error) {
+func (s *DownloadStore) FindWaiting(offset uint, count uint) ([]*download.Download, error) {
 	notStartedLookup := s.baseTerm().Filter(IsWaiting())
 
-	return s.getMultiDownload(notStartedLookup)
+	return s.getMultiDownload(notStartedLookup, offset, count)
 }
 
-func (s *DownloadStore) FindNotFinished() ([]*download.Download, error) {
+func (s *DownloadStore) FindNotFinished(offset uint, count uint) ([]*download.Download, error) {
 	notFinishedLookup := s.baseTerm().Filter(IsNotFinished())
 
-	return s.getMultiDownload(notFinishedLookup)
+	return s.getMultiDownload(notFinishedLookup, offset, count)
 }
 
-func (s *DownloadStore) FindFinished() ([]*download.Download, error) {
+func (s *DownloadStore) FindFinished(offset uint, count uint) ([]*download.Download, error) {
 	finishedLookup := s.baseTerm().Filter(IsFinished())
 
-	return s.getMultiDownload(finishedLookup)
+	return s.getMultiDownload(finishedLookup, offset, count)
 }
 
-func (s *DownloadStore) FindInProgress() ([]*download.Download, error) {
+func (s *DownloadStore) FindInProgress(offset uint, count uint) ([]*download.Download, error) {
 	inProgressLookup := s.baseTerm().Filter(InProgress())
 
-	return s.getMultiDownload(inProgressLookup)
+	return s.getMultiDownload(inProgressLookup, offset, count)
 }
 
-func (s *DownloadStore) FindAll() ([]*download.Download, error) {
+func (s *DownloadStore) FindAll(offset uint, count uint) ([]*download.Download, error) {
 	allLookup := s.baseTerm()
 
-	return s.getMultiDownload(allLookup)
+	return s.getMultiDownload(allLookup, offset, count)
 }
 
 func (s *DownloadStore) Init() error {

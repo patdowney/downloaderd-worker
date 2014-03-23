@@ -102,26 +102,26 @@ func (s *RequestStore) FindByID(requestID string) (*download.Request, error) {
 	return s.getSingleRequest(idLookup)
 }
 
-func (s *RequestStore) FindByResourceKey(resourceKey download.ResourceKey) ([]*download.Request, error) {
+func (s *RequestStore) FindByResourceKey(resourceKey download.ResourceKey, offset uint, count uint) ([]*download.Request, error) {
 	resourceKeyLookup := s.baseTerm().GetAllByIndex("ResourceKey", []interface{}{resourceKey.URL, resourceKey.ETag})
 
-	return s.getMultiRequest(resourceKeyLookup)
+	return s.getMultiRequest(resourceKeyLookup, offset, count)
 }
 
-func (s *RequestStore) FindAll() ([]*download.Request, error) {
+func (s *RequestStore) FindAll(offset uint, count uint) ([]*download.Request, error) {
 	allLookup := s.baseTerm()
-	return s.getMultiRequest(allLookup)
+	return s.getMultiRequest(allLookup, offset, count)
 }
 
-func (s *RequestStore) getMultiRequest(term r.RqlTerm) ([]*download.Request, error) {
-	rows, err := term.Run(s.Session)
+func (s *RequestStore) getMultiRequest(term r.RqlTerm, offset uint, count uint) ([]*download.Request, error) {
+	rows, err := term.Slice(offset, (offset + count)).Run(s.Session)
 	if err != nil {
 		results := make([]*download.Request, 0, 0)
 		return results, err
 	}
 
-	count, _ := rows.Count()
-	results := make([]*download.Request, 0, count)
+	resultCount, _ := rows.Count()
+	results := make([]*download.Request, 0, resultCount)
 
 	for rows.Next() {
 		var request download.Request

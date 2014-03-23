@@ -88,7 +88,7 @@ func (s *DownloadStore) FindByResourceKey(resourceKey download.ResourceKey) (*do
 	return nil, nil
 }
 
-func (s *DownloadStore) FindAll() ([]*download.Download, error) {
+func (s *DownloadStore) FindAll(offset uint, count uint) ([]*download.Download, error) {
 	s.RLock()
 	defer s.RUnlock()
 
@@ -98,13 +98,14 @@ func (s *DownloadStore) FindAll() ([]*download.Download, error) {
 	return tmpRepository, nil
 }
 
-func (s *DownloadStore) FindFinished() ([]*download.Download, error) {
+func (s *DownloadStore) FindFinished(offset uint, count uint) ([]*download.Download, error) {
 	s.RLock()
 	defer s.RUnlock()
 
 	tmpRepository := make([]*download.Download, 0)
 
-	for _, download := range s.repository {
+	repoSlice := s.sliceRepository(offset, count)
+	for _, download := range repoSlice {
 		if download.Finished {
 			tmpRepository = append(tmpRepository, download)
 		}
@@ -113,13 +114,14 @@ func (s *DownloadStore) FindFinished() ([]*download.Download, error) {
 	return tmpRepository, nil
 }
 
-func (s *DownloadStore) FindNotFinished() ([]*download.Download, error) {
+func (s *DownloadStore) FindNotFinished(offset uint, count uint) ([]*download.Download, error) {
 	s.RLock()
 	defer s.RUnlock()
 
 	tmpRepository := make([]*download.Download, 0)
 
-	for _, download := range s.repository {
+	repoSlice := s.sliceRepository(offset, count)
+	for _, download := range repoSlice {
 		if !download.Finished {
 			tmpRepository = append(tmpRepository, download)
 		}
@@ -128,14 +130,15 @@ func (s *DownloadStore) FindNotFinished() ([]*download.Download, error) {
 	return tmpRepository, nil
 }
 
-func (s *DownloadStore) FindInProgress() ([]*download.Download, error) {
+func (s *DownloadStore) FindInProgress(offset uint, count uint) ([]*download.Download, error) {
 	s.RLock()
 	defer s.RUnlock()
 
 	tmpRepository := make([]*download.Download, 0)
 	var beginningOfTime time.Time
 
-	for _, download := range s.repository {
+	repoSlice := s.sliceRepository(offset, count)
+	for _, download := range repoSlice {
 		if !download.Finished {
 			if download.TimeStarted.After(beginningOfTime) {
 				tmpRepository = append(tmpRepository, download)
@@ -146,14 +149,19 @@ func (s *DownloadStore) FindInProgress() ([]*download.Download, error) {
 	return tmpRepository, nil
 }
 
-func (s *DownloadStore) FindWaiting() ([]*download.Download, error) {
+func (s *DownloadStore) sliceRepository(offset uint, count uint) []*download.Download {
+	return s.repository[offset:(offset + count)]
+}
+
+func (s *DownloadStore) FindWaiting(offset uint, count uint) ([]*download.Download, error) {
 	s.RLock()
 	defer s.RUnlock()
 
 	tmpRepository := make([]*download.Download, 0)
 	var beginningOfTime time.Time
 
-	for _, download := range s.repository {
+	repoSlice := s.sliceRepository(offset, count)
+	for _, download := range repoSlice {
 		if !download.Finished {
 			if download.TimeStarted.UTC() == beginningOfTime.UTC() {
 				tmpRepository = append(tmpRepository, download)
