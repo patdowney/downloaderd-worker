@@ -2,27 +2,38 @@ package download
 
 import (
 	"encoding/hex"
-	"github.com/patdowney/downloaderd/common"
 	"hash"
+
+	"github.com/patdowney/downloaderd/common"
 )
 
 type StatusWriter struct {
-	DownloadID    string
-	Clock         common.Clock
-	StatusChannel chan StatusUpdate
-	Hash          hash.Hash
+	DownloadID   string
+	Clock        common.Clock
+	StatusSender StatusSender
+	Hash         hash.Hash
+
+	TotalBytesRead       int
+	UpdateByteDifference int
 }
 
-func NewStatusWriter(downloadID string, statusChannel chan StatusUpdate, hash hash.Hash) *StatusWriter {
+func NewStatusWriter(downloadID string, statusSender StatusSender, hash hash.Hash, byteDifference int) *StatusWriter {
 	sw := StatusWriter{
-		Clock:         &common.RealClock{},
-		DownloadID:    downloadID,
-		StatusChannel: statusChannel,
-		Hash:          hash}
-
-	sw.SendStartUpdate()
+		Clock:                &common.RealClock{},
+		DownloadID:           downloadID,
+		StatusSender:         statusSender,
+		Hash:                 hash,
+		UpdateByteDifference: byteDifference,
+		TotalBytesRead:       0}
 
 	return &sw
+}
+
+func (s *StatusWriter) ShouldSendUpdate(oldTotalByteCount int, newTotalByteCount int) bool {
+	previousDiv := int(oldTotalByteCount / s.UpdateByteDifference)
+	currentDiv := int(newTotalByteCount / s.UpdateByteDifference)
+
+	return (currentDiv > previousDiv)
 }
 
 func (s *StatusWriter) Write(bytes []byte) (int, error) {
@@ -31,7 +42,13 @@ func (s *StatusWriter) Write(bytes []byte) (int, error) {
 	}
 	byteCount := len(bytes)
 
-	s.SendBytesWrittenUpdate(uint64(byteCount))
+	oldTotalByteCount := s.TotalBytesRead
+
+	s.TotalBytesRead += byteCount
+
+	if s.ShouldSendUpdate(oldTotalByteCount, s.TotalBytesRead) {
+		s.SendBytesWrittenUpdate(uint64(byteCount))
+	}
 
 	return byteCount, nil
 }
@@ -56,7 +73,7 @@ func (s *StatusWriter) SendUpdate(byteCount uint64, finished bool) {
 		BytesRead:  byteCount,
 		Finished:   finished}
 
-	s.StatusChannel <- statusUpdate
+	s.StatusSender.SendUpdate(statusUpdate)
 }
 
 func (s *StatusWriter) Checksum() []byte {

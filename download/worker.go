@@ -2,17 +2,15 @@ package download
 
 import (
 	"bufio"
-	//"encoding/hex"
 	"fmt"
-	//"hash"
 	"io"
-	//"log"
 	"net/http"
-	//"os"
-	//"path/filepath"
-	"github.com/patdowney/downloaderd/common"
 	"time"
+
+	"github.com/patdowney/downloaderd/common"
 )
+
+const UPDATE_BYTE_DIFFERENCE = 50000
 
 type DownloadHTTPError struct {
 	URL        string
@@ -26,13 +24,13 @@ func (e DownloadHTTPError) Error() string {
 }
 
 type Worker struct {
-	ID            uint
-	Clock         common.Clock
-	FileStore     FileStore
-	WorkQueue     chan Download
-	ErrorChannel  chan DownloadError
-	UpdateChannel chan StatusUpdate
-	stop          bool
+	ID           uint
+	Clock        common.Clock
+	FileStore    FileStore
+	WorkQueue    chan Download
+	ErrorChannel chan DownloadError
+	StatusSender StatusSender
+	stop         bool
 }
 
 func (w Worker) start() {
@@ -69,7 +67,7 @@ func (w Worker) SaveWithStatus(download *Download) error {
 		w.SendError(download.ID, err)
 	}
 
-	statusWriter := NewStatusWriter(download.ID, w.UpdateChannel, downloadHash)
+	statusWriter := NewStatusWriter(download.ID, w.StatusSender, downloadHash, UPDATE_BYTE_DIFFERENCE)
 	defer statusWriter.Close()
 
 	outputWriter, err := w.FileStore.GetWriter(download)
@@ -78,6 +76,8 @@ func (w Worker) SaveWithStatus(download *Download) error {
 		return err
 	}
 	defer outputWriter.Close()
+
+	statusWriter.SendStartUpdate()
 
 	return w.Save(download, outputWriter, statusWriter)
 }
@@ -116,12 +116,12 @@ func (w Worker) Save(download *Download, outputWriter io.Writer, statusWriter *S
 
 func NewWorker(id uint, workQueue chan Download, updateChannel chan StatusUpdate, errorChannel chan DownloadError, fileStore FileStore) *Worker {
 	worker := &Worker{
-		Clock:         &common.RealClock{},
-		ID:            id,
-		WorkQueue:     workQueue,
-		UpdateChannel: updateChannel,
-		ErrorChannel:  errorChannel,
-		FileStore:     fileStore}
+		Clock:        &common.RealClock{},
+		ID:           id,
+		WorkQueue:    workQueue,
+		StatusSender: &ChannelStatusSender{StatusChannel: updateChannel},
+		ErrorChannel: errorChannel,
+		FileStore:    fileStore}
 
 	return worker
 }
