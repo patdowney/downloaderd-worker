@@ -60,8 +60,10 @@ func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
 
 	// regexp matches ids that look like '8671301b-49fa-416c-4bc0-2869963779e5'
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("download")
-	//parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/callback/{requestID:[a-f0-9-]{36}}", r.GetCallbackStatus()).Methods("GET", "HEAD").Name("callback-status")
+
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/data", r.GetData()).Methods("GET", "HEAD").Name("download-data")
+
+	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/verify", r.VerifyData()).Methods("GET", "HEAD").Name("download-verify")
 
 	r.router = parentRouter
 	r.linkResolver = api.NewLinkResolver(parentRouter)
@@ -142,6 +144,56 @@ func (r *DownloadResource) Stats(indexFunc IndexFunc) http.HandlerFunc {
 				log.Printf("encoder-error: %v", encErr)
 			}
 		}
+	}
+}
+
+func (r *DownloadResource) VerifyData() http.HandlerFunc {
+	return func(rw http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		downloadID := vars["id"]
+
+		download, err := r.DownloadService.FindByID(downloadID)
+		encoder := json.NewEncoder(rw)
+
+		if err != nil {
+			log.Printf("server-error-verify-data(%s): %v", downloadID, err)
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusInternalServerError)
+			encErr := encoder.Encode(r.WrapError(err))
+			if encErr != nil {
+				log.Printf("encoder-error-verify-data(%s): %v", downloadID, encErr)
+			}
+		} else if download != nil {
+			if download.Finished {
+				ok, err := r.DownloadService.Verify(download)
+				if err != nil {
+					log.Printf("server-error-verify-data(%s): %v", downloadID, err)
+					rw.Header().Set("Content-Type", "application/json")
+					rw.WriteHeader(http.StatusInternalServerError)
+					encErr := encoder.Encode(r.WrapError(err))
+					if encErr != nil {
+						log.Printf("encoder-error-verify-data(%s): %v", downloadID, encErr)
+					}
+					return
+				}
+
+				if ok {
+					rw.WriteHeader(http.StatusOK)
+				} else {
+					rw.WriteHeader(http.StatusConflict)
+				}
+
+				encErr := encoder.Encode(ok)
+				if encErr != nil {
+					log.Printf("encoder-error-verify-data(%s): %v", downloadID, encErr)
+				}
+			} else {
+				rw.WriteHeader(http.StatusPartialContent)
+			}
+		} else {
+			rw.WriteHeader(http.StatusNotFound)
+		}
+
 	}
 }
 

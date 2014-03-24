@@ -1,6 +1,8 @@
 package s3
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/url"
@@ -73,7 +75,6 @@ func (s *FileStore) s3upload(reader io.Reader, savePath string, length int64, co
 
 func (s *FileStore) GetWriter(download *download.Download) (io.WriteCloser, error) {
 	savePath, err := s.SavePathForDownload(download)
-
 	if err != nil {
 		return nil, err
 	}
@@ -88,4 +89,43 @@ func (s *FileStore) GetWriter(download *download.Download) (io.WriteCloser, erro
 	}()
 
 	return pipeWriter, nil
+}
+
+func (s *FileStore) getFileInfo(s3Key string) (*s3.Key, error) {
+
+	listResponse, err := s.bucket("downloaderd").List(s3Key, "/", "", 1)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(listResponse.Contents) != 1 {
+		return nil, errors.New(fmt.Sprintf("key not found: %v", s3Key))
+	}
+
+	return &listResponse.Contents[0], nil
+}
+
+func (s *FileStore) Verify(download *download.Download) (bool, error) {
+	savePath, err := s.SavePathForDownload(download)
+	if err != nil {
+		return false, err
+	}
+
+	expectedSize := download.Metadata.Size
+
+	fileKey, err := s.getFileInfo(savePath)
+	if err != nil {
+		return false, errors.New(fmt.Sprintf("verify(%v): %v", download.ID, err.Error()))
+	}
+
+	sizeOnS3 := uint64(fileKey.Size)
+
+	if sizeOnS3 != expectedSize {
+		return false, errors.New(fmt.Sprintf("verify(%v):size mismatch (%v): expected=%d, actual=%d", download.ID, savePath, expectedSize, sizeOnS3))
+	}
+
+	// we're cheating - if we really meant it we'd compare checksums
+	// s3 gives us the md5 checksum as fileKey.ETag
+
+	return true, nil
 }

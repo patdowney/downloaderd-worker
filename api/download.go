@@ -30,6 +30,9 @@ func (d *Download) ResolveLinks(linkResolver *LinkResolver, req *http.Request) {
 	d.Links = append(d.Links,
 		Link{Relation: "data", Value: d.ID,
 			ValueID: "id", RouteName: "download-data"})
+	d.Links = append(d.Links,
+		Link{Relation: "verify", Value: d.ID,
+			ValueID: "id", RouteName: "download-verify"})
 
 	linkResolver.ResolveLinks(req, &d.Links)
 }

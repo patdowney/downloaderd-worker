@@ -159,3 +159,7 @@ func (s *DownloadService) FindByID(id string) (*Download, error) {
 func (s *DownloadService) GetReader(download *Download) (io.Reader, error) {
 	return s.fileStore.GetReader(download)
 }
+
+func (s *DownloadService) Verify(download *Download) (bool, error) {
+	return s.fileStore.Verify(download)
+}

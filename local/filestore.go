@@ -72,3 +72,26 @@ func (us *FileStore) GetWriter(download *download.Download) (io.WriteCloser, err
 
 	return saveFile, nil
 }
+
+func (us *FileStore) Verify(download *download.Download) (bool, error) {
+	savePath, err := us.SavePathForDownload(download)
+	if err != nil {
+		return false, err
+	}
+
+	fileInfo, err := os.Stat(savePath)
+	if err != nil {
+		return false, err
+	}
+
+	expectedSize := download.Metadata.Size
+	sizeOnDisk := uint64(fileInfo.Size())
+
+	if sizeOnDisk != expectedSize {
+		return false, errors.New(fmt.Sprintf("size mismatch: expected=%d, actual=%d", expectedSize, sizeOnDisk))
+	}
+
+	// we're cheating - if we really meant it we'd compare checksums
+
+	return true, nil
+}
