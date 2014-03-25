@@ -1,24 +1,16 @@
 package rethinkdb
 
 import (
-	"log"
-
 	r "github.com/dancannon/gorethink"
 	"github.com/patdowney/downloaderd/download"
 )
 
 type RequestStore struct {
-	DatabaseName string
-	TableName    string
-	Session      *r.Session
-}
-
-func (s *RequestStore) baseTerm() r.RqlTerm {
-	return r.Db(s.DatabaseName).Table(s.TableName)
+	GeneralStore
 }
 
 func (s *RequestStore) indexExists(name string) (bool, error) {
-	row, err := s.baseTerm().IndexList().Contains(name).RunRow(s.Session)
+	row, err := s.BaseTerm().IndexList().Contains(name).RunRow(s.Session)
 	if err != nil {
 		return false, err
 	}
@@ -31,47 +23,37 @@ func (s *RequestStore) indexExists(name string) (bool, error) {
 	return exists, nil
 }
 
+func ResourceKeyIndex(row r.RqlTerm) interface{} {
+	return []interface{}{row.Field("URL"), row.Field("Metadata").Field("ETag")}
+}
+
 func (s *RequestStore) createIndexes() error {
-	exists, err := s.indexExists("ResourceKey")
+	err := s.IndexCreateWithFunc(
+		"ResourceKey",
+		ResourceKeyIndex)
 	if err != nil {
 		return err
 	}
-	if !exists {
-		_, err := s.baseTerm().IndexCreateFunc("ResourceKey", func(row r.RqlTerm) interface{} {
-			return []interface{}{row.Field("URL"), row.Field("Metadata").Field("ETag")}
-		}).RunWrite(s.Session)
-		if err != nil {
-			return err
-		}
-	}
 
-	s.baseTerm().IndexWait().Exec(s.Session)
+	s.BaseTerm().IndexWait().Exec(s.Session)
 	return nil
 }
 
 func (s *RequestStore) Init() error {
-	err := r.DbCreate(s.DatabaseName).Exec(s.Session)
-	if err != nil {
-		log.Print(err)
-	}
-
-	_, err = r.Db(s.DatabaseName).TableCreate(s.TableName).RunWrite(s.Session)
-	if err != nil {
-		log.Print(err)
-	}
-
-	s.createIndexes()
-
-	return nil
+	return s.createIndexes()
 }
 
 func NewRequestStoreWithSession(s *r.Session, dbName string, tableName string) (*RequestStore, error) {
-	requestStore := &RequestStore{
-		Session:      s,
-		DatabaseName: dbName,
-		TableName:    tableName}
 
-	err := requestStore.Init()
+	generalStore, err := NewGeneralStoreWithSession(s, dbName, tableName)
+	if err != nil {
+		return nil, err
+	}
+
+	requestStore := &RequestStore{}
+	requestStore.GeneralStore = *generalStore
+
+	err = requestStore.Init()
 	if err != nil {
 		return nil, err
 	}
@@ -92,24 +74,24 @@ func NewRequestStore(c Config) (*RequestStore, error) {
 }
 
 func (s *RequestStore) Add(request *download.Request) error {
-	_, err := s.baseTerm().Insert(request).RunWrite(s.Session)
+	_, err := s.BaseTerm().Insert(request).RunWrite(s.Session)
 	return err
 }
 
 func (s *RequestStore) FindByID(requestID string) (*download.Request, error) {
-	idLookup := s.baseTerm().Get(requestID)
+	idLookup := s.BaseTerm().Get(requestID)
 
 	return s.getSingleRequest(idLookup)
 }
 
 func (s *RequestStore) FindByResourceKey(resourceKey download.ResourceKey, offset uint, count uint) ([]*download.Request, error) {
-	resourceKeyLookup := s.baseTerm().GetAllByIndex("ResourceKey", []interface{}{resourceKey.URL, resourceKey.ETag})
+	resourceKeyLookup := s.BaseTerm().GetAllByIndex("ResourceKey", []interface{}{resourceKey.URL, resourceKey.ETag})
 
 	return s.getMultiRequest(resourceKeyLookup, offset, count)
 }
 
 func (s *RequestStore) FindAll(offset uint, count uint) ([]*download.Request, error) {
-	allLookup := s.baseTerm()
+	allLookup := s.BaseTerm()
 	return s.getMultiRequest(allLookup, offset, count)
 }
 

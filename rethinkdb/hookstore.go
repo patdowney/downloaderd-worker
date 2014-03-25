@@ -8,68 +8,40 @@ import (
 )
 
 type HookStore struct {
-	DatabaseName string
-	TableName    string
-	Session      *r.Session
+	GeneralStore
 }
 
-func (s *HookStore) baseTerm() r.RqlTerm {
-	return r.Db(s.DatabaseName).Table(s.TableName)
-}
-
-func (s *HookStore) indexExists(name string) (bool, error) {
-	row, err := s.baseTerm().IndexList().Contains(name).RunRow(s.Session)
-	if err != nil {
-		return false, err
-	}
-	var exists bool
-	err = row.Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-
-	return exists, nil
+func HookKeyIndex(row r.RqlTerm) interface{} {
+	return []interface{}{row.Field("DownloadID"), row.Field("RequestID")}
 }
 
 func (s *HookStore) createIndexes() error {
-	exists, err := s.indexExists("HookKeyIndex")
+	err := s.IndexCreateWithFunc("HookKeyIndex", HookKeyIndex)
 	if err != nil {
 		return err
 	}
-	if !exists {
-		s.baseTerm().IndexCreateFunc("HookKeyIndex",
-			func(row r.RqlTerm) interface{} {
-				return []interface{}{row.Field("DownloadID"), row.Field("RequestID")}
-			}).Exec(s.Session)
-	}
 
-	exists, err = s.indexExists("DownloadID")
+	err = s.IndexCreate("DownloadID")
 	if err != nil {
 		return err
 	}
-	if !exists {
-		s.baseTerm().IndexCreate("DownloadID").Exec(s.Session)
-	}
 
-	exists, err = s.indexExists("RequestID")
+	err = s.IndexCreate("RequestID")
 	if err != nil {
 		return err
 	}
-	if !exists {
-		s.baseTerm().IndexCreate("RequestID").Exec(s.Session)
-	}
 
-	s.baseTerm().IndexWait().Exec(s.Session)
+	s.BaseTerm().IndexWait().Exec(s.Session)
 	return nil
 }
 
 func (s *HookStore) Add(hook *download.Hook) error {
-	_, err := s.baseTerm().Insert(hook).RunWrite(s.Session)
+	_, err := s.BaseTerm().Insert(hook).RunWrite(s.Session)
 	return err
 }
 
 func (s *HookStore) AllByHookKey(downloadID string, requestID string) r.RqlTerm {
-	return s.baseTerm().GetAllByIndex("HookKeyIndex",
+	return s.BaseTerm().GetAllByIndex("HookKeyIndex",
 		[]interface{}{downloadID, requestID})
 }
 
@@ -85,19 +57,19 @@ func (s *HookStore) FindByHookKey(downloadID string, requestID string) ([]*downl
 }
 
 func (s *HookStore) FindByDownloadID(downloadID string) ([]*download.Hook, error) {
-	downloadIDLookup := s.baseTerm().GetAllByIndex("DownloadID", downloadID)
+	downloadIDLookup := s.BaseTerm().GetAllByIndex("DownloadID", downloadID)
 
 	return s.getMultiHook(downloadIDLookup)
 }
 
 func (s *HookStore) FindByRequestID(requestID string) ([]*download.Hook, error) {
-	requestIDLookup := s.baseTerm().GetAllByIndex("RequestID", requestID)
+	requestIDLookup := s.BaseTerm().GetAllByIndex("RequestID", requestID)
 
 	return s.getMultiHook(requestIDLookup)
 }
 
 func (s *HookStore) ListAll() ([]*download.Hook, error) {
-	allLookup := s.baseTerm()
+	allLookup := s.BaseTerm()
 
 	return s.getMultiHook(allLookup)
 }
@@ -125,28 +97,20 @@ func (s *HookStore) getMultiHook(term r.RqlTerm) ([]*download.Hook, error) {
 }
 
 func (s *HookStore) Init() error {
-	err := r.DbCreate(s.DatabaseName).Exec(s.Session)
-	if err != nil {
-		log.Print(err)
-	}
-	_, err = r.Db(s.DatabaseName).TableCreate(s.TableName).RunWrite(s.Session)
-	if err != nil {
-		log.Print(err)
-	}
-
-	s.createIndexes()
-
-	return nil
+	return s.createIndexes()
 }
 
 func NewHookStoreWithSession(s *r.Session, dbName string, tableName string) (*HookStore, error) {
 
-	hookStore := &HookStore{
-		Session:      s,
-		DatabaseName: dbName,
-		TableName:    tableName}
+	generalStore, err := NewGeneralStoreWithSession(s, dbName, tableName)
+	if err != nil {
+		return nil, err
+	}
 
-	err := hookStore.Init()
+	hookStore := &HookStore{}
+	hookStore.GeneralStore = *generalStore
+
+	err = hookStore.Init()
 	if err != nil {
 		return nil, err
 	}

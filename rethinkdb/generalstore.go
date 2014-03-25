@@ -44,8 +44,6 @@ func (s *GeneralStore) Init() error {
 	return InitDatabaseAndTable(s.Session, s.DatabaseName, s.TableName)
 }
 
-type IndexFunc func(row r.RqlTerm) interface{}
-
 func (s *GeneralStore) IndexCreateWithFunc(name string, indexFunc IndexFunc) error {
 	exists, err := IndexExists(s.Session, s.DatabaseName, s.TableName, name)
 	if err != nil {
@@ -82,63 +80,4 @@ func (s *GeneralStore) IndexCreate(field string) error {
 
 func (s *GeneralStore) BaseTerm() r.RqlTerm {
 	return r.Db(s.DatabaseName).Table(s.TableName)
-}
-
-func IndexExists(s *r.Session, databaseName, tableName, indexName string) (bool, error) {
-	return ListContains(s, r.Db(databaseName).Table(tableName).IndexList(), indexName)
-}
-
-func ListContains(s *r.Session, t r.RqlTerm, name string) (bool, error) {
-	row, err := t.Contains(name).RunRow(s)
-	if err != nil {
-		return false, err
-	}
-	var contains bool
-	err = row.Scan(&contains)
-	if err != nil {
-		return false, err
-	}
-
-	return contains, nil
-}
-
-func InitDatabaseAndTable(s *r.Session, databaseName string, tableName string) error {
-	err := InitDatabase(s, databaseName)
-	if err != nil {
-		return err
-	}
-
-	err = InitTable(s, databaseName, tableName)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func InitDatabase(s *r.Session, databaseName string) error {
-	exists, err := ListContains(s, r.DbList(), databaseName)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		err := r.DbCreate(databaseName).Exec(s)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func InitTable(s *r.Session, databaseName string, tableName string) error {
-	exists, err := ListContains(s, r.Db(databaseName).TableList(), tableName)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		_, err = r.Db(databaseName).TableCreate(tableName).RunWrite(s)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
