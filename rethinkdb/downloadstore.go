@@ -20,29 +20,29 @@ func (s *DownloadStore) createIndexes() error {
 		return err
 	}
 
-	s.BaseTerm().IndexWait().Exec(s.Session)
+	s.IndexWait()
 
 	return nil
 }
 
 func (s *DownloadStore) Add(download *download.Download) error {
-	_, err := s.BaseTerm().Insert(download).RunWrite(s.Session)
+	err := s.Insert(download)
 	return err
 }
 
 func (s *DownloadStore) Update(download *download.Download) error {
-	_, err := s.BaseTerm().Get(download.ID).Update(download).RunWrite(s.Session)
+	_, err := s.Get(download.ID).Update(download).RunWrite(s.Session)
 	return err
 }
 
 func (s *DownloadStore) purgeIncomplete() error {
-	s.BaseTerm().GetAllByIndex("Finished", true).Filter(IsIncomplete()).Delete().RunWrite(s.Session)
+	s.GetAllByIndex("Finished", true).Filter(IsIncomplete()).Delete().RunWrite(s.Session)
 
 	return nil
 }
 
 func (s *DownloadStore) purgeUnfinished() error {
-	s.BaseTerm().GetAllByIndex("Finished", false).Delete().RunWrite(s.Session)
+	s.GetAllByIndex("Finished", false).Delete().RunWrite(s.Session)
 
 	return nil
 }
@@ -67,13 +67,13 @@ func (s *DownloadStore) getSingleDownload(term r.RqlTerm) (*download.Download, e
 }
 
 func (s *DownloadStore) FindByID(downloadID string) (*download.Download, error) {
-	idLookup := s.BaseTerm().Get(downloadID)
+	idLookup := s.Get(downloadID)
 
 	return s.getSingleDownload(idLookup)
 }
 
 func (s *DownloadStore) FindByResourceKey(resourceKey download.ResourceKey) (*download.Download, error) {
-	resourceKeyLookup := s.BaseTerm().GetAllByIndex("ResourceKey", []interface{}{resourceKey.URL, resourceKey.ETag})
+	resourceKeyLookup := s.GetAllByIndex("ResourceKey", []interface{}{resourceKey.URL, resourceKey.ETag})
 
 	return s.getSingleDownload(resourceKeyLookup)
 }
@@ -100,25 +100,25 @@ func (s *DownloadStore) getMultiDownload(term r.RqlTerm, offset uint, count uint
 }
 
 func (s *DownloadStore) FindWaiting(offset uint, count uint) ([]*download.Download, error) {
-	notStartedLookup := s.BaseTerm().GetAllByIndex("Finished", false).Filter(NotStarted())
+	notStartedLookup := s.GetAllByIndex("Finished", false).Filter(NotStarted())
 
 	return s.getMultiDownload(notStartedLookup, offset, count)
 }
 
 func (s *DownloadStore) FindNotFinished(offset uint, count uint) ([]*download.Download, error) {
-	notFinishedLookup := s.BaseTerm().GetAllByIndex("Finished", false)
+	notFinishedLookup := s.GetAllByIndex("Finished", false)
 
 	return s.getMultiDownload(notFinishedLookup, offset, count)
 }
 
 func (s *DownloadStore) FindFinished(offset uint, count uint) ([]*download.Download, error) {
-	finishedLookup := s.BaseTerm().GetAllByIndex("Finished", true)
+	finishedLookup := s.GetAllByIndex("Finished", true)
 
 	return s.getMultiDownload(finishedLookup, offset, count)
 }
 
 func (s *DownloadStore) FindInProgress(offset uint, count uint) ([]*download.Download, error) {
-	inProgressLookup := s.BaseTerm().GetAllByIndex("Finished", false).Filter(Started())
+	inProgressLookup := s.GetAllByIndex("Finished", false).Filter(Started())
 
 	return s.getMultiDownload(inProgressLookup, offset, count)
 }

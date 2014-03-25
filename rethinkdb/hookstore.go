@@ -31,18 +31,17 @@ func (s *HookStore) createIndexes() error {
 		return err
 	}
 
-	s.BaseTerm().IndexWait().Exec(s.Session)
+	s.IndexWait()
 	return nil
 }
 
 func (s *HookStore) Add(hook *download.Hook) error {
-	_, err := s.BaseTerm().Insert(hook).RunWrite(s.Session)
+	err := s.Insert(hook)
 	return err
 }
 
 func (s *HookStore) AllByHookKey(downloadID string, requestID string) r.RqlTerm {
-	return s.BaseTerm().GetAllByIndex("HookKeyIndex",
-		[]interface{}{downloadID, requestID})
+	return s.GetAllByIndex("HookKeyIndex", []interface{}{downloadID, requestID})
 }
 
 func (s *HookStore) Update(h *download.Hook) error {
@@ -57,13 +56,13 @@ func (s *HookStore) FindByHookKey(downloadID string, requestID string) ([]*downl
 }
 
 func (s *HookStore) FindByDownloadID(downloadID string) ([]*download.Hook, error) {
-	downloadIDLookup := s.BaseTerm().GetAllByIndex("DownloadID", downloadID)
+	downloadIDLookup := s.GetAllByIndex("DownloadID", downloadID)
 
 	return s.getMultiHook(downloadIDLookup)
 }
 
 func (s *HookStore) FindByRequestID(requestID string) ([]*download.Hook, error) {
-	requestIDLookup := s.BaseTerm().GetAllByIndex("RequestID", requestID)
+	requestIDLookup := s.GetAllByIndex("RequestID", requestID)
 
 	return s.getMultiHook(requestIDLookup)
 }

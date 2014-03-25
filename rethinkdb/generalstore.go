@@ -40,6 +40,23 @@ func NewGeneralStore(c Config, tableName string) (*GeneralStore, error) {
 	return NewGeneralStoreWithSession(session, c.Database, tableName)
 }
 
+func (s *GeneralStore) Get(key interface{}) r.RqlTerm {
+	return s.BaseTerm().Get(key)
+}
+
+func (s *GeneralStore) IndexWait() {
+	s.BaseTerm().IndexWait().Exec(s.Session)
+}
+
+func (s *GeneralStore) Insert(arg interface{}, optArgs ...r.InsertOpts) error {
+	_, err := s.BaseTerm().Insert(arg, optArgs...).RunWrite(s.Session)
+	return err
+}
+
+func (s *GeneralStore) GetAllByIndex(index interface{}, keys ...interface{}) r.RqlTerm {
+	return s.BaseTerm().GetAllByIndex(index, keys...)
+}
+
 func (s *GeneralStore) Init() error {
 	return InitDatabaseAndTable(s.Session, s.DatabaseName, s.TableName)
 }
