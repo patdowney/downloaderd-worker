@@ -63,6 +63,23 @@ func (s *GeneralStore) IndexCreateWithFunc(name string, indexFunc IndexFunc) err
 	return nil
 }
 
+func (s *GeneralStore) IndexCreate(field string) error {
+	exists, err := IndexExists(s.Session, s.DatabaseName, s.TableName, field)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		err = s.BaseTerm().IndexCreate(field).Exec(s.Session)
+		if err != nil {
+			return err
+		}
+	}
+
+	s.BaseTerm().IndexWait().Exec(s.Session)
+
+	return nil
+}
+
 func (s *GeneralStore) BaseTerm() r.RqlTerm {
 	return r.Db(s.DatabaseName).Table(s.TableName)
 }
