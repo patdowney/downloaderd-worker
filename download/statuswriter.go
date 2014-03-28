@@ -15,6 +15,7 @@ type StatusWriter struct {
 
 	TotalBytesRead       int
 	UpdateByteDifference int
+	ByteCountToSend      int
 }
 
 func NewStatusWriter(downloadID string, statusSender StatusSender, hash hash.Hash, byteDifference int) *StatusWriter {
@@ -24,16 +25,10 @@ func NewStatusWriter(downloadID string, statusSender StatusSender, hash hash.Has
 		StatusSender:         statusSender,
 		Hash:                 hash,
 		UpdateByteDifference: byteDifference,
-		TotalBytesRead:       0}
+		TotalBytesRead:       0,
+		ByteCountToSend:      0}
 
 	return &sw
-}
-
-func (s *StatusWriter) ShouldSendUpdate(oldTotalByteCount int, newTotalByteCount int) bool {
-	previousDiv := int(oldTotalByteCount / s.UpdateByteDifference)
-	currentDiv := int(newTotalByteCount / s.UpdateByteDifference)
-
-	return (currentDiv > previousDiv)
 }
 
 func (s *StatusWriter) Write(bytes []byte) (int, error) {
@@ -42,12 +37,12 @@ func (s *StatusWriter) Write(bytes []byte) (int, error) {
 	}
 	byteCount := len(bytes)
 
-	oldTotalByteCount := s.TotalBytesRead
-
 	s.TotalBytesRead += byteCount
+	s.ByteCountToSend += byteCount
 
-	if s.ShouldSendUpdate(oldTotalByteCount, s.TotalBytesRead) {
-		s.SendBytesWrittenUpdate(uint64(byteCount))
+	if s.ByteCountToSend > s.UpdateByteDifference {
+		s.SendBytesWrittenUpdate(uint64(s.ByteCountToSend))
+		s.ByteCountToSend = 0
 	}
 
 	return byteCount, nil
@@ -62,7 +57,7 @@ func (s *StatusWriter) SendStartUpdate() {
 }
 
 func (s *StatusWriter) SendFinishedUpdate() {
-	s.SendUpdate(uint64(0), true)
+	s.SendUpdate(uint64(s.ByteCountToSend), true)
 }
 
 func (s *StatusWriter) SendUpdate(byteCount uint64, finished bool) {

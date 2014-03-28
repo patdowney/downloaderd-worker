@@ -31,33 +31,6 @@ func TestAccumulateTotal(t *testing.T) {
 	}
 
 }
-func TestShouldSendUpdateBelowThreshold(t *testing.T) {
-	s := &StatusWriter{UpdateByteDifference: 10}
-
-	oldTotalBytes := 5
-	newTotalBytes := 11
-
-	actual := s.ShouldSendUpdate(oldTotalBytes, newTotalBytes)
-	expected := true
-
-	if actual != expected {
-		t.Errorf("ShouldSendUpdate(%d, %d): expected %v, got %v", oldTotalBytes, newTotalBytes, expected, actual)
-	}
-}
-
-func TestShouldSendUpdateOverThreshold(t *testing.T) {
-	s := &StatusWriter{UpdateByteDifference: 10}
-
-	oldTotalBytes := 0
-	newTotalBytes := 5
-
-	actual := s.ShouldSendUpdate(oldTotalBytes, newTotalBytes)
-	expected := false
-
-	if actual != expected {
-		t.Errorf("ShouldSendUpdate(%d, %d): expected %v, got %v", oldTotalBytes, newTotalBytes, expected, actual)
-	}
-}
 
 func TestOnlySendUpdateOnDifference(t *testing.T) {
 	byteDifference := 10
