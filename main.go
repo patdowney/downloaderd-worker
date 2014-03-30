@@ -25,6 +25,8 @@ type Config struct {
 
 	AccessLogWriter io.Writer
 	ErrorLogWriter  io.Writer
+
+	RethinkDBAddress string
 }
 
 func ConfigureLogging(config *Config) {
@@ -37,6 +39,7 @@ func ParseArgs() *Config {
 	flag.StringVar(&c.ListenAddress, "http", "localhost:8080", "address to listen on")
 	flag.UintVar(&c.WorkerCount, "workers", 2, "number of workers to use")
 	flag.UintVar(&c.QueueLength, "queuelength", 32, "size of download queue")
+	flag.StringVar(&c.RethinkDBAddress, "rethinkdb", "localhost:28015", "address to listen on")
 	flag.StringVar(&c.DownloadDirectory, "downloaddir", "./download-data", "root directory of save tree.")
 	flag.StringVar(&c.DownloadDataFile, "downloaddata", "downloads.json", "download database file")
 	flag.StringVar(&c.RequestDataFile, "requestdata", "requests.json", "request database file")
@@ -53,7 +56,7 @@ func CreateServer(config *Config) {
 	s := dh.NewServer(&dh.HTTPConfig{ListenAddress: config.ListenAddress})
 
 	//downloadStore, err := local.NewDownloadStore(config.DownloadDataFile)
-	c := rethinkdb.Config{Address: "localhost:28015",
+	c := rethinkdb.Config{Address: config.RethinkDBAddress,
 		MaxIdle:   10,
 		MaxActive: 20,
 		Database:  "Downloaderd"}
