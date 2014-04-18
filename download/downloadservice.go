@@ -156,6 +156,35 @@ func (s *DownloadService) FindByID(id string) (*Download, error) {
 	return s.downloadStore.FindByID(id)
 }
 
+func (s *DownloadService) Delete(download *Download) (bool, error) {
+	_, err := s.fileStore.Delete(download)
+	if err != nil {
+		return false, err
+	}
+
+	err = s.downloadStore.Delete(download)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (s *DownloadService) DeleteByID(id string) (bool, error) {
+	d, err := s.FindByID(id)
+	if err != nil {
+		return false, err
+	}
+
+	// needs to be handled better
+	// in cases where id doesn't exist.
+	if d == nil {
+		return false, nil
+	}
+
+	return s.Delete(d)
+}
+
 func (s *DownloadService) GetReader(download *Download) (io.Reader, error) {
 	return s.fileStore.GetReader(download)
 }

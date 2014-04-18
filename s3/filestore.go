@@ -116,6 +116,20 @@ func (s *FileStore) getFileInfo(s3Key string) (*s3.Key, error) {
 	return &listResponse.Contents[0], nil
 }
 
+func (s *FileStore) Delete(download *download.Download) (bool, error) {
+	savePath, err := s.SavePathForDownload(download)
+	if err != nil {
+		return false, err
+	}
+
+	err = s.Bucket.Del(savePath)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (s *FileStore) Verify(download *download.Download) (bool, error) {
 	savePath, err := s.SavePathForDownload(download)
 	if err != nil {

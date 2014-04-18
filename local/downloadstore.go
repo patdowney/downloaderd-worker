@@ -13,6 +13,23 @@ type DownloadStore struct {
 	repository []*download.Download
 }
 
+func (s *DownloadStore) Delete(d *download.Download) error {
+	s.Lock()
+	newRepository := make([]*download.Download, 0, len(s.repository))
+
+	for _, download := range s.repository {
+		if download.ID != d.ID {
+			newRepository = append(newRepository, download)
+		}
+	}
+	s.repository = newRepository
+	s.Unlock()
+
+	err := s.Commit()
+
+	return err
+}
+
 func (s *DownloadStore) Add(download *download.Download) error {
 	s.Lock()
 	s.repository = append(s.repository, download)

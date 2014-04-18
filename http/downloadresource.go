@@ -60,6 +60,7 @@ func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
 
 	// regexp matches ids that look like '8671301b-49fa-416c-4bc0-2869963779e5'
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("download")
+	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Delete()).Methods("DELETE").Name("download-delete")
 
 	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/data", r.GetData()).Methods("GET", "HEAD").Name("download-data")
 
@@ -255,6 +256,34 @@ func (r *DownloadResource) GetData() http.HandlerFunc {
 	}
 }
 
+func (r *DownloadResource) Delete() http.HandlerFunc {
+	return func(rw http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		downloadID := vars["id"]
+
+		deleted, err := r.DownloadService.DeleteByID(downloadID)
+
+		encoder := json.NewEncoder(rw)
+		rw.Header().Set("Content-Type", "application/json")
+
+		if err != nil {
+			log.Printf("server-error-get(%s): %v", downloadID, err)
+			rw.WriteHeader(http.StatusInternalServerError)
+			encErr := encoder.Encode(r.WrapError(err))
+			if encErr != nil {
+				log.Printf("encoder-error-get(%s): %v", downloadID, encErr)
+			}
+		} else if deleted {
+			log.Printf("deleted-download-with-id: %v", downloadID)
+
+			rw.WriteHeader(http.StatusOK)
+		} else {
+			log.Printf("deleted-download-not-found: %v", downloadID)
+
+			rw.WriteHeader(http.StatusNotFound)
+		}
+	}
+}
 func (r *DownloadResource) Get() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)

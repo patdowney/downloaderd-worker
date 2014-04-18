@@ -3,6 +3,7 @@ package download
 type DownloadStore interface {
 	Add(*Download) error
 	Update(*Download) error
+	Delete(*Download) error
 	FindByID(string) (*Download, error)
 	FindByResourceKey(ResourceKey) (*Download, error)
 	FindAll(uint, uint) ([]*Download, error)

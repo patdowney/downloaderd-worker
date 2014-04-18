@@ -53,6 +53,11 @@ func (s *GeneralStore) Insert(arg interface{}, optArgs ...r.InsertOpts) error {
 	return err
 }
 
+func (s *GeneralStore) DeleteByKey(key interface{}, optArgs ...r.DeleteOpts) error {
+	_, err := s.BaseTerm().Get(key).Delete(optArgs...).RunWrite(s.Session)
+	return err
+}
+
 func (s *GeneralStore) GetAllByIndex(index interface{}, keys ...interface{}) r.RqlTerm {
 	return s.BaseTerm().GetAllByIndex(index, keys...)
 }

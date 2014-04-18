@@ -25,6 +25,11 @@ func (s *DownloadStore) createIndexes() error {
 	return nil
 }
 
+func (s *DownloadStore) Delete(download *download.Download) error {
+	err := s.DeleteByKey(download.ID)
+	return err
+}
+
 func (s *DownloadStore) Add(download *download.Download) error {
 	err := s.Insert(download)
 	return err
