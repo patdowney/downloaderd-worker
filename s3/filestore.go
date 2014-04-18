@@ -14,26 +14,25 @@ import (
 )
 
 type FileStore struct {
-	Region aws.Region
-
-	auth aws.Auth
+	Bucket *s3.Bucket
 }
 
 type Config struct {
-	SecretKey string
-	AccessKey string
+	BucketName string
+	RegionName string
+	SecretKey  string
+	AccessKey  string
 }
 
-func (s *FileStore) bucket(bucketName string) *s3.Bucket {
-	s3i := s3.New(s.auth, s.Region)
+func openBucket(auth aws.Auth, region aws.Region, bucketName string) *s3.Bucket {
+	s3i := s3.New(auth, region)
 	return s3i.Bucket(bucketName)
 }
 
-func NewFileStore(c Config) (*FileStore, error) {
-
+func authFromEnvOrConfig(c Config) (aws.Auth, error) {
 	auth, err := aws.EnvAuth()
 	if err != nil {
-		return nil, err
+		return aws.Auth{}, err
 	}
 	if c.AccessKey != "" {
 		auth.AccessKey = c.AccessKey
@@ -42,7 +41,19 @@ func NewFileStore(c Config) (*FileStore, error) {
 		auth.SecretKey = c.SecretKey
 	}
 
-	return &FileStore{auth: auth, Region: aws.Regions["us-east-1"]}, nil
+	return auth, err
+}
+
+func NewFileStore(c Config) (*FileStore, error) {
+	auth, err := authFromEnvOrConfig(c)
+	if err != nil {
+		return nil, err
+	}
+
+	region := aws.Regions[c.RegionName]
+	bucket := openBucket(auth, region, c.BucketName)
+
+	return &FileStore{Bucket: bucket}, nil
 }
 
 func (s *FileStore) SavePathFromURL(sourceURL string) string {
@@ -66,11 +77,11 @@ func (s *FileStore) GetReader(download *download.Download) (io.ReadCloser, error
 		return nil, err
 	}
 
-	return s.bucket("downloaderd").GetReader(dataPath)
+	return s.Bucket.GetReader(dataPath)
 }
 
 func (s *FileStore) s3upload(reader io.Reader, savePath string, length int64, contentType string) error {
-	return s.bucket("downloaderd").PutReader(savePath, reader, length, contentType, s3.BucketOwnerFull)
+	return s.Bucket.PutReader(savePath, reader, length, contentType, s3.BucketOwnerFull)
 }
 
 func (s *FileStore) GetWriter(download *download.Download) (io.WriteCloser, error) {
@@ -93,7 +104,7 @@ func (s *FileStore) GetWriter(download *download.Download) (io.WriteCloser, erro
 
 func (s *FileStore) getFileInfo(s3Key string) (*s3.Key, error) {
 
-	listResponse, err := s.bucket("downloaderd").List(s3Key, "/", "", 1)
+	listResponse, err := s.Bucket.List(s3Key, "/", "", 1)
 	if err != nil {
 		return nil, err
 	}

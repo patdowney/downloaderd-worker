@@ -53,7 +53,7 @@ func ParseArgs() *Config {
 }
 
 func CreateServer(config *Config) {
-	s := dh.NewServer(&dh.HTTPConfig{ListenAddress: config.ListenAddress})
+	s := dh.NewServer(&dh.HTTPConfig{ListenAddress: config.ListenAddress}, os.Stdout)
 
 	//downloadStore, err := local.NewDownloadStore(config.DownloadDataFile)
 	c := rethinkdb.Config{Address: config.RethinkDBAddress,
@@ -67,7 +67,7 @@ func CreateServer(config *Config) {
 	}
 
 	//fileStore := local.NewFileStore(config.DownloadDirectory)
-	c3 := s3.Config{}
+	c3 := s3.Config{BucketName: "downloaderd", RegionName: "us-east-1"}
 	fileStore, err := s3.NewFileStore(c3)
 	if err != nil {
 		log.Printf("s3-init-filestore-error: %v", err)

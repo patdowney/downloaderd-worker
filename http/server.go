@@ -1,11 +1,11 @@
 package http
 
 import (
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 	"io"
 	"net/http"
-	"os"
+
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 )
 
 type HTTPConfig struct {
@@ -18,11 +18,11 @@ type Server struct {
 	AccessLogWriter io.Writer
 }
 
-func NewServer(config *HTTPConfig) *Server {
+func NewServer(config *HTTPConfig, accessLogWriter io.Writer) *Server {
 	return &Server{
 		ListenAddress:   config.ListenAddress,
 		Router:          mux.NewRouter(),
-		AccessLogWriter: os.Stdout}
+		AccessLogWriter: accessLogWriter}
 }
 
 func (s *Server) AddResource(pathPrefix string, r Resource) {
@@ -30,12 +30,12 @@ func (s *Server) AddResource(pathPrefix string, r Resource) {
 	r.RegisterRoutes(subrouter)
 }
 
-func (s *Server) GetHandler() http.Handler {
+func (s *Server) handler() http.Handler {
 	return handlers.CombinedLoggingHandler(s.AccessLogWriter, s.Router)
 }
 
 func (s *Server) ListenAndServe() error {
-	http.Handle("/", s.GetHandler())
+	http.Handle("/", s.handler())
 
 	return http.ListenAndServe(s.ListenAddress, nil)
 }
