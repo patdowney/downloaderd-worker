@@ -45,10 +45,10 @@ func NewRequestStoreWithSession(s *r.Session, dbName string, tableName string) (
 }
 
 func NewRequestStore(c Config) (*RequestStore, error) {
-	session, err := r.Connect(map[string]interface{}{
-		"address":   c.Address,
-		"maxIdle":   c.MaxIdle,
-		"maxActive": c.MaxActive,
+	session, err := r.Connect(r.ConnectOpts{
+		Address:   c.Address,
+		MaxIdle:   c.MaxIdle,
+		MaxActive: c.MaxActive,
 	})
 	if err != nil {
 		return nil, err
