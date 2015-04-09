@@ -1,7 +1,7 @@
 package download
 
 import (
-	"github.com/patdowney/downloaderd/common"
+	"github.com/patdowney/downloaderd-worker/common"
 	"time"
 )
 

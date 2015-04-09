@@ -6,12 +6,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/patdowney/downloaderd/api"
-	"github.com/patdowney/downloaderd/download"
-	dh "github.com/patdowney/downloaderd/http"
-	"github.com/patdowney/downloaderd/local"
-	"github.com/patdowney/downloaderd/rethinkdb"
-	//"github.com/patdowney/downloaderd/s3"
+	"github.com/patdowney/downloaderd-worker/api"
+	"github.com/patdowney/downloaderd-worker/download"
+	dh "github.com/patdowney/downloaderd-worker/http"
+	"github.com/patdowney/downloaderd-worker/local"
+	//"github.com/patdowney/downloaderd-worker/rethinkdb"
+	//"github.com/patdowney/downloaderd-worker/s3"
 )
 
 // Config ...
@@ -21,7 +21,6 @@ type Config struct {
 	QueueLength       uint
 	DownloadDirectory string
 	DownloadDataFile  string
-	RequestDataFile   string
 	HookDataFile      string
 
 	AccessLogWriter io.Writer
@@ -45,7 +44,6 @@ func ParseArgs() *Config {
 	flag.StringVar(&c.RethinkDBAddress, "rethinkdb", "localhost:28015", "address to listen on")
 	flag.StringVar(&c.DownloadDirectory, "downloaddir", "./download-data", "root directory of save tree.")
 	flag.StringVar(&c.DownloadDataFile, "downloaddata", "downloads.json", "download database file")
-	flag.StringVar(&c.RequestDataFile, "requestdata", "requests.json", "request database file")
 	flag.StringVar(&c.HookDataFile, "hookdata", "hooks.json", "hooks database file")
 	flag.Parse()
 
@@ -59,15 +57,15 @@ func ParseArgs() *Config {
 func CreateServer(config *Config) {
 	s := dh.NewServer(&dh.Config{ListenAddress: config.ListenAddress}, os.Stdout)
 
-	//	downloadStore, err := local.NewDownloadStore(config.DownloadDataFile)
+	downloadStore, err := local.NewDownloadStore(config.DownloadDataFile)
+	/*
+		c := rethinkdb.Config{Address: config.RethinkDBAddress,
+			MaxIdle:  10,
+			MaxOpen:  20,
+			Database: "Downloaderd"}
 
-	c := rethinkdb.Config{Address: config.RethinkDBAddress,
-		MaxIdle:  10,
-		MaxOpen:  20,
-		Database: "Downloaderd"}
-
-	downloadStore, err := rethinkdb.NewDownloadStore(c)
-
+		downloadStore, err := rethinkdb.NewDownloadStore(c)
+	*/
 	if err != nil {
 		log.Printf("init-download-store-error: %v", err)
 	}
@@ -78,12 +76,6 @@ func CreateServer(config *Config) {
 	//if err != nil {
 	//		log.Printf("s3-init-filestore-error: %v", err)
 	//	}
-
-	requestStore, err := local.NewRequestStore(config.RequestDataFile)
-	//requestStore, err := rethinkdb.NewRequestStore(c)
-	if err != nil {
-		log.Printf("init-request-store-error: %v", err)
-	}
 
 	hookStore, err := local.NewHookStore(config.HookDataFile)
 	//hookStore, err := rethinkdb.NewHookStore(c)
@@ -98,13 +90,8 @@ func CreateServer(config *Config) {
 	downloadService := download.NewDownloadService(downloadStore, fileStore, config.WorkerCount, config.QueueLength)
 	downloadService.HookService = download.NewHookService(hookStore, linkResolver)
 
-	requestService := download.NewRequestService(requestStore, downloadService)
-
 	downloadResource := dh.NewDownloadResource(downloadService, linkResolver)
 	s.AddResource("/download", downloadResource)
-
-	requestResource := dh.NewRequestResource(requestService, linkResolver)
-	s.AddResource("/request", requestResource)
 
 	downloadService.Start()
 

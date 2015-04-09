@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"hash"
 
-	"github.com/patdowney/downloaderd/common"
+	"github.com/patdowney/downloaderd-worker/common"
 )
 
 // StatusWriter ...

@@ -3,7 +3,7 @@ package download
 import (
 	"time"
 
-	"github.com/patdowney/downloaderd/api"
+	"github.com/patdowney/downloaderd-worker/api"
 )
 
 // ToAPIDownloadStats ...

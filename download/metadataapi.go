@@ -1,7 +1,7 @@
 package download
 
 import (
-	"github.com/patdowney/downloaderd/api"
+	"github.com/patdowney/downloaderd-worker/api"
 )
 
 func ToAPIMetadata(dm *Metadata) *api.Metadata {

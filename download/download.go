@@ -32,10 +32,18 @@ func NewDownload(id string, request *Request, downloadTime time.Time) *Download 
 		URL:           request.URL,
 		Checksum:      request.Checksum,
 		ChecksumType:  request.ChecksumType,
-		Metadata:      request.Metadata,
 		Status:        &Status{},
+		Metadata:      &Metadata{},
 		TimeRequested: downloadTime,
 		Errors:        make([]Error, 0)}
+
+	if request.ETag != "" {
+		d.Metadata.ETag = request.ETag
+	}
+
+	if request.ContentLength > 0 {
+		d.Metadata.Size = request.ContentLength
+	}
 
 	validatedChecksum, err := d.ValidateChecksum(d.ChecksumType)
 	d.ChecksumType = validatedChecksum
@@ -51,7 +59,10 @@ func NewDownload(id string, request *Request, downloadTime time.Time) *Download 
 
 // PercentComplete ...
 func (d *Download) PercentComplete() float32 {
-	return float32(100 * (float64(d.Status.BytesRead) / float64(d.Metadata.Size)))
+	if d.Metadata.Size > 0 {
+		return float32(100 * (float64(d.Status.BytesRead) / float64(d.Metadata.Size)))
+	}
+	return 0
 }
 
 // Duration ...

@@ -1,9 +1,10 @@
 package download
 
 import (
+	"encoding/json"
+	"github.com/patdowney/downloaderd-worker/api"
+	"log"
 	"time"
-
-	"github.com/patdowney/downloaderd/api"
 )
 
 func ToAPIDownloadList(origList *[]*Download) *[]*api.Download {
@@ -39,6 +40,11 @@ func ToAPIDownload(dd *Download) *api.Download {
 		d.PercentComplete = dd.PercentComplete()
 		//		d.AverageBytesPerSecond = dd.AverageBytesPerSecond()
 	}
+
+	p, _ := json.MarshalIndent(dd, "", "  ")
+	log.Printf("dd:%v", string(p))
+	p, _ = json.MarshalIndent(d, "", "  ")
+	log.Printf("d:%v", string(p))
 
 	return d
 }

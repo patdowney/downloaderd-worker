@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/patdowney/downloaderd/api"
-	"github.com/patdowney/downloaderd/common"
+	"github.com/patdowney/downloaderd-worker/api"
+	"github.com/patdowney/downloaderd-worker/common"
 )
 
 type HookService struct {

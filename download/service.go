@@ -4,7 +4,7 @@ import (
 	"io"
 	//	"log"
 
-	"github.com/patdowney/downloaderd/common"
+	"github.com/patdowney/downloaderd-worker/common"
 )
 
 // Service ...

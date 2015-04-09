@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/patdowney/downloaderd/download"
+	"github.com/patdowney/downloaderd-worker/download"
 )
 
 // DownloadStore ...
@@ -45,11 +45,12 @@ func (s *DownloadStore) Add(download *download.Download) error {
 
 // Update ...
 func (s *DownloadStore) Update(download *download.Download) error {
+	s.Lock()
 	d, err := s.FindByID(download.ID)
 	if err == nil {
 		*d = *download
 	}
-
+	s.Unlock()
 	err = s.Commit()
 
 	return err

@@ -2,12 +2,13 @@ package local
 
 import (
 	"fmt"
-	"github.com/patdowney/downloaderd/download"
 	"io"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/patdowney/downloaderd-worker/download"
 )
 
 // FileStore ...

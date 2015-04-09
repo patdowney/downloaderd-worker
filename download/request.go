@@ -1,29 +1,21 @@
 package download
 
-import (
-	"time"
-)
-
+// Request ...
 type Request struct {
 	ID            string
 	URL           string
 	Checksum      string
 	ChecksumType  string
-	TimeRequested time.Time
 	Callback      string
-	DownloadID    string
-	Errors        []*RequestError
-	Metadata      *Metadata
+	ETag          string
+	ContentLength uint64
 }
 
+// ResourceKey ...
 func (r *Request) ResourceKey() ResourceKey {
 	rk := ResourceKey{URL: r.URL}
-	if r.Metadata != nil {
-		rk.ETag = r.Metadata.ETag
+	if r.ETag != "" {
+		rk.ETag = r.ETag
 	}
 	return rk
-}
-
-func (r *Request) AddError(requestError error, errorTime time.Time) {
-	r.Errors = append(r.Errors, NewRequestError(requestError, errorTime))
 }

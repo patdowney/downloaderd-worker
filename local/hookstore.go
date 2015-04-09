@@ -1,8 +1,9 @@
 package local
 
 import (
-	"github.com/patdowney/downloaderd/download"
 	"sync"
+
+	"github.com/patdowney/downloaderd-worker/download"
 )
 
 type HookStore struct {

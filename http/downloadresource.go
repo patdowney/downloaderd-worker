@@ -11,9 +11,9 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
-	"github.com/patdowney/downloaderd/api"
-	"github.com/patdowney/downloaderd/common"
-	"github.com/patdowney/downloaderd/download"
+	"github.com/patdowney/downloaderd-worker/api"
+	"github.com/patdowney/downloaderd-worker/common"
+	"github.com/patdowney/downloaderd-worker/download"
 )
 
 // DownloadResource ...
@@ -44,7 +44,18 @@ func (r *DownloadResource) populateLinks(req *http.Request, download *api.Downlo
 
 // RegisterRoutes ...
 func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
+	parentRouter.HandleFunc("/", r.Post()).Methods("POST")
 	parentRouter.HandleFunc("/", r.Index(r.AllIndex())).Methods("GET", "HEAD")
+
+	// regexp matches ids that look like '8671301b-49fa-416c-4bc0-2869963779e5'
+	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("download")
+	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Delete()).Methods("DELETE").Name("download-delete")
+	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/data", r.GetData()).Methods("GET", "HEAD").Name("download-data")
+	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/verify", r.VerifyData()).Methods("GET", "HEAD").Name("download-verify")
+
+	// predefined searches
+	parentRouter.HandleFunc("/all", r.Index(r.AllIndex())).Methods("GET", "HEAD")
+	parentRouter.HandleFunc("/all/stats", r.Stats(r.AllIndex())).Methods("GET", "HEAD")
 
 	parentRouter.HandleFunc("/finished", r.Index(r.FinishedIndex())).Methods("GET", "HEAD")
 	parentRouter.HandleFunc("/finished/stats", r.Stats(r.FinishedIndex())).Methods("GET", "HEAD")
@@ -57,17 +68,6 @@ func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
 
 	parentRouter.HandleFunc("/waiting", r.Index(r.WaitingIndex())).Methods("GET", "HEAD")
 	parentRouter.HandleFunc("/waiting/stats", r.Stats(r.WaitingIndex())).Methods("GET", "HEAD")
-
-	parentRouter.HandleFunc("/all", r.Index(r.AllIndex())).Methods("GET", "HEAD")
-	parentRouter.HandleFunc("/all/stats", r.Stats(r.AllIndex())).Methods("GET", "HEAD")
-
-	// regexp matches ids that look like '8671301b-49fa-416c-4bc0-2869963779e5'
-	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Get()).Methods("GET", "HEAD").Name("download")
-	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}", r.Delete()).Methods("DELETE").Name("download-delete")
-
-	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/data", r.GetData()).Methods("GET", "HEAD").Name("download-data")
-
-	parentRouter.HandleFunc("/{id:[a-f0-9-]{36}}/verify", r.VerifyData()).Methods("GET", "HEAD").Name("download-verify")
 
 	r.router = parentRouter
 	r.linkResolver = api.NewLinkResolver(parentRouter)
@@ -341,6 +341,89 @@ func (r *DownloadResource) Get() http.HandlerFunc {
 			if encErr != nil {
 				log.Printf("encoder-error-get(%s): %v", downloadID, encErr)
 			}
+		}
+	}
+}
+
+// GetDownloadURL ...
+func (r *DownloadResource) GetDownloadURL(id string) (*url.URL, error) {
+	if r.router != nil {
+		return r.router.Get("download").URL("id", id)
+	}
+
+	return nil, errors.New("no router set")
+}
+
+// DecodeIncomingDownload ...
+func (r *DownloadResource) DecodeIncomingDownload(body io.Reader) (*api.IncomingDownload, error) {
+	decoder := json.NewDecoder(body)
+	var inDown api.IncomingDownload
+	err := decoder.Decode(&inDown)
+	if err != nil {
+		return nil, err
+	}
+
+	return &inDown, nil
+}
+
+// ValidateIncomingDownload ...
+func (r *DownloadResource) ValidateIncomingDownload(inDown *api.IncomingDownload) error {
+	if inDown.URL == "" {
+		return errors.New("empty url")
+	}
+
+	u, err := url.Parse(inDown.URL)
+	if err != nil {
+		return err
+	} else if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("unsupported url scheme: '%s'", u.Scheme)
+	}
+	return nil
+}
+
+// IncomingDownload ...
+type IncomingDownload struct {
+	URL string
+}
+
+// Post ...
+func (r *DownloadResource) Post() http.HandlerFunc {
+	return func(rw http.ResponseWriter, req *http.Request) {
+		incomingDownload, err := r.DecodeIncomingDownload(req.Body)
+		if err != nil {
+			log.Printf("incoming-request-decode-error: %v", err)
+			http.Error(rw, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		err = r.ValidateIncomingDownload(incomingDownload)
+		if err != nil {
+			log.Printf("incoming-request-validation-error: %v", err)
+			http.Error(rw, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		downloadReq := download.FromAPIIncomingDownload(incomingDownload)
+		d, err := r.DownloadService.ProcessRequest(downloadReq)
+
+		var encErr error
+		encoder := json.NewEncoder(rw)
+		rw.Header().Set("Content-Type", "application/json")
+
+		if err != nil {
+			log.Printf("server-error-post(%s): %v", d.ID, err)
+			rw.WriteHeader(http.StatusInternalServerError)
+			encErr = encoder.Encode(r.WrapError(err))
+		} else {
+			newURL, _ := r.GetDownloadURL(d.ID)
+			rw.Header().Set("Location", newURL.String())
+			rw.WriteHeader(http.StatusAccepted)
+			da := download.ToAPIDownload(d)
+			//			r.populateLinks(req, da)
+			encErr = encoder.Encode(da)
+		}
+		if encErr != nil {
+			log.Printf("encoder-error-post(%s): %v", d.ID, encErr)
 		}
 	}
 }

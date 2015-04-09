@@ -10,7 +10,7 @@ import (
 	"gopkg.in/amz.v1/aws"
 	"gopkg.in/amz.v1/s3"
 
-	"github.com/patdowney/downloaderd/download"
+	"github.com/patdowney/downloaderd-worker/download"
 )
 
 // FileStore ...

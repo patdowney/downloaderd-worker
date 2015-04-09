@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	r "github.com/dancannon/gorethink"
-	"github.com/patdowney/downloaderd/download"
+	"github.com/patdowney/downloaderd-worker/download"
 )
 
 func createSession() (*r.Session, error) {
