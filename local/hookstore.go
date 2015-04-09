@@ -3,11 +3,12 @@ package local
 import (
 	"sync"
 
+	"github.com/patdowney/downloaderd-common/local"
 	"github.com/patdowney/downloaderd-worker/download"
 )
 
 type HookStore struct {
-	JSONStore
+	local.JSONStore
 	sync.RWMutex
 	repository []*download.Hook
 }

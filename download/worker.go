@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/patdowney/downloaderd-worker/common"
+	"github.com/patdowney/downloaderd-common/common"
 )
 
 // UpdateByteDifference ...

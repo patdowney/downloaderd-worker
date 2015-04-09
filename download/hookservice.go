@@ -6,8 +6,9 @@ import (
 	"log"
 	"net/http"
 
+	common "github.com/patdowney/downloaderd-common/common"
+	commonhttp "github.com/patdowney/downloaderd-common/http"
 	"github.com/patdowney/downloaderd-worker/api"
-	"github.com/patdowney/downloaderd-worker/common"
 )
 
 type HookService struct {
@@ -73,7 +74,7 @@ func (s *HookService) notifyHook(hook *Hook, download *Download) (*HookResult, e
 	hr.StatusCode = res.StatusCode
 
 	if res.StatusCode != http.StatusOK {
-		e := common.HTTPError{
+		e := commonhttp.Error{
 			URL:        hook.URL,
 			Method:     "Post",
 			StatusCode: res.StatusCode,

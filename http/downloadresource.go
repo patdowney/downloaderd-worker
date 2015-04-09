@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
+	"github.com/patdowney/downloaderd-common/common"
 	"github.com/patdowney/downloaderd-worker/api"
-	"github.com/patdowney/downloaderd-worker/common"
 	"github.com/patdowney/downloaderd-worker/download"
 )
 
@@ -75,7 +75,7 @@ func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
 
 // WrapError ...
 func (r *DownloadResource) WrapError(err error) *api.Error {
-	return download.ToAPIError(common.NewErrorWrapper(err, r.Clock.Now()))
+	return download.ToAPIError(common.NewTimestampedError(err, r.Clock.Now()))
 }
 
 // IndexFunc ...

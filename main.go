@@ -6,10 +6,12 @@ import (
 	"log"
 	"os"
 
+	http "github.com/patdowney/downloaderd-common/http"
 	"github.com/patdowney/downloaderd-worker/api"
 	"github.com/patdowney/downloaderd-worker/download"
 	dh "github.com/patdowney/downloaderd-worker/http"
 	"github.com/patdowney/downloaderd-worker/local"
+	//"github.com/patdowney/downloaderd-common/rethinkdb"
 	//"github.com/patdowney/downloaderd-worker/rethinkdb"
 	//"github.com/patdowney/downloaderd-worker/s3"
 )
@@ -55,7 +57,7 @@ func ParseArgs() *Config {
 
 // CreateServer ...
 func CreateServer(config *Config) {
-	s := dh.NewServer(&dh.Config{ListenAddress: config.ListenAddress}, os.Stdout)
+	s := http.NewServer(&http.Config{ListenAddress: config.ListenAddress}, os.Stdout)
 
 	downloadStore, err := local.NewDownloadStore(config.DownloadDataFile)
 	/*

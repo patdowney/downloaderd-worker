@@ -4,12 +4,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/patdowney/downloaderd-common/local"
 	"github.com/patdowney/downloaderd-worker/download"
 )
 
 // DownloadStore ...
 type DownloadStore struct {
-	JSONStore
+	local.JSONStore
 	sync.RWMutex
 	repository []*download.Download
 }

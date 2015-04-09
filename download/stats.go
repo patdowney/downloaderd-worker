@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/GaryBoone/GoStats/stats"
-	"github.com/patdowney/downloaderd-worker/common"
+	"github.com/patdowney/downloaderd-common/common"
 )
 
 // Stats ...
