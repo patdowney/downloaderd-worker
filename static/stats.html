@@ -65,15 +65,15 @@
 
 		function fetchStats() {
 			$.ajax({
-  				url: "http://localhost:8082/download/inprogress/stats",
+  				url: "http://127.0.0.1:8080/download/inprogress/stats",
   				success: updateInProgressStats
 			});
 			$.ajax({
-  				url: "http://localhost:8082/download/waiting/stats",
+  				url: "http://127.0.0.1:8080/download/waiting/stats",
   				success: updateWaitingStats
 			});
 			$.ajax({
-  				url: "http://localhost:8082/download/finished/stats",
+  				url: "http://127.0.0.1:8080/download/finished/stats",
   				success: updateFinishedStats
 			});
 		}

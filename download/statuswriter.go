@@ -7,6 +7,7 @@ import (
 	"github.com/patdowney/downloaderd/common"
 )
 
+// StatusWriter ...
 type StatusWriter struct {
 	DownloadID   string
 	Clock        common.Clock
@@ -18,6 +19,7 @@ type StatusWriter struct {
 	ByteCountToSend      int
 }
 
+// NewStatusWriter ...
 func NewStatusWriter(downloadID string, statusSender StatusSender, hash hash.Hash, byteDifference int) *StatusWriter {
 	sw := StatusWriter{
 		Clock:                &common.RealClock{},
@@ -48,18 +50,22 @@ func (s *StatusWriter) Write(bytes []byte) (int, error) {
 	return byteCount, nil
 }
 
+// SendBytesWrittenUpdate ...
 func (s *StatusWriter) SendBytesWrittenUpdate(byteCount uint64) {
 	s.SendUpdate(byteCount, false)
 }
 
+// SendStartUpdate ...
 func (s *StatusWriter) SendStartUpdate() {
 	s.SendUpdate(uint64(0), false)
 }
 
+// SendFinishedUpdate ...
 func (s *StatusWriter) SendFinishedUpdate() {
 	s.SendUpdate(uint64(s.ByteCountToSend), true)
 }
 
+// SendUpdate ...
 func (s *StatusWriter) SendUpdate(byteCount uint64, finished bool) {
 	statusUpdate := StatusUpdate{
 		DownloadID: s.DownloadID,
@@ -71,18 +77,21 @@ func (s *StatusWriter) SendUpdate(byteCount uint64, finished bool) {
 	s.StatusSender.SendUpdate(statusUpdate)
 }
 
+// Checksum ...
 func (s *StatusWriter) Checksum() []byte {
-	checksum := make([]byte, 0)
+	var checksum []byte
 	if s.Hash != nil {
 		checksum = s.Hash.Sum(checksum)
 	}
 	return checksum
 }
 
+// ChecksumString ...
 func (s *StatusWriter) ChecksumString() string {
 	return hex.EncodeToString(s.Checksum())
 }
 
+// Close ...
 func (s *StatusWriter) Close() error {
 	s.SendFinishedUpdate()
 	return nil

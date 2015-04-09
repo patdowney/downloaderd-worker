@@ -9,7 +9,7 @@ type RequestStore struct {
 	GeneralStore
 }
 
-func ResourceKeyIndex(row r.RqlTerm) interface{} {
+func ResourceKeyIndex(row r.Term) interface{} {
 	return []interface{}{row.Field("URL"), row.Field("Metadata").Field("ETag")}
 }
 
@@ -46,9 +46,9 @@ func NewRequestStoreWithSession(s *r.Session, dbName string, tableName string) (
 
 func NewRequestStore(c Config) (*RequestStore, error) {
 	session, err := r.Connect(r.ConnectOpts{
-		Address:   c.Address,
-		MaxIdle:   c.MaxIdle,
-		MaxActive: c.MaxActive,
+		Address: c.Address,
+		MaxIdle: c.MaxIdle,
+		MaxOpen: c.MaxOpen,
 	})
 	if err != nil {
 		return nil, err
@@ -79,29 +79,24 @@ func (s *RequestStore) FindAll(offset uint, count uint) ([]*download.Request, er
 	return s.getMultiRequest(allLookup, offset, count)
 }
 
-func (s *RequestStore) getMultiRequest(term r.RqlTerm, offset uint, count uint) ([]*download.Request, error) {
+func (s *RequestStore) getMultiRequest(term r.Term, offset uint, count uint) ([]*download.Request, error) {
+	var results []*download.Request
+
 	rows, err := term.Slice(offset, (offset + count)).Run(s.Session)
 	if err != nil {
-		results := make([]*download.Request, 0, 0)
-		return results, err
+		return nil, err
 	}
 
-	resultCount, _ := rows.Count()
-	results := make([]*download.Request, 0, resultCount)
-
-	for rows.Next() {
-		var request download.Request
-		err = rows.Scan(&request)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, &request)
+	err = rows.All(&results)
+	if err != nil {
+		return nil, err
 	}
+
 	return results, nil
 }
 
-func (s *RequestStore) getSingleRequest(term r.RqlTerm) (*download.Request, error) {
-	row, err := term.RunRow(s.Session)
+func (s *RequestStore) getSingleRequest(term r.Term) (*download.Request, error) {
+	row, err := term.Run(s.Session)
 
 	if err != nil {
 		return nil, err
@@ -112,7 +107,7 @@ func (s *RequestStore) getSingleRequest(term r.RqlTerm) (*download.Request, erro
 	}
 
 	var request download.Request
-	err = row.Scan(&request)
+	err = row.One(&request)
 	if err != nil {
 		return nil, err
 	}

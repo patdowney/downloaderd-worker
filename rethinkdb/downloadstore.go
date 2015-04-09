@@ -3,6 +3,8 @@ package rethinkdb
 import (
 	r "github.com/dancannon/gorethink"
 	"github.com/patdowney/downloaderd/download"
+
+	"log"
 )
 
 type DownloadStore struct {
@@ -31,7 +33,12 @@ func (s *DownloadStore) Delete(download *download.Download) error {
 }
 
 func (s *DownloadStore) Add(download *download.Download) error {
+	log.Printf("insert: %v", download.TimeStarted)
 	err := s.Insert(download)
+
+	d, _ := s.FindByID(download.ID)
+	log.Printf("get: %v", d.TimeStarted)
+
 	return err
 }
 
@@ -52,8 +59,8 @@ func (s *DownloadStore) purgeUnfinished() error {
 	return nil
 }
 
-func (s *DownloadStore) getSingleDownload(term r.RqlTerm) (*download.Download, error) {
-	row, err := term.RunRow(s.Session)
+func (s *DownloadStore) getSingleDownload(term r.Term) (*download.Download, error) {
+	row, err := term.Run(s.Session)
 
 	if err != nil {
 		return nil, err
@@ -64,7 +71,7 @@ func (s *DownloadStore) getSingleDownload(term r.RqlTerm) (*download.Download, e
 	}
 
 	var download download.Download
-	err = row.Scan(&download)
+	err = row.One(&download)
 	if err != nil {
 		return nil, err
 	}
@@ -83,24 +90,19 @@ func (s *DownloadStore) FindByResourceKey(resourceKey download.ResourceKey) (*do
 	return s.getSingleDownload(resourceKeyLookup)
 }
 
-func (s *DownloadStore) getMultiDownload(term r.RqlTerm, offset uint, count uint) ([]*download.Download, error) {
+func (s *DownloadStore) getMultiDownload(term r.Term, offset uint, count uint) ([]*download.Download, error) {
+	var results []*download.Download
+
 	rows, err := term.Slice(offset, (offset + count)).Run(s.Session)
 	if err != nil {
-		results := make([]*download.Download, 0, 0)
 		return results, err
 	}
 
-	resultCount, _ := rows.Count()
-	results := make([]*download.Download, 0, resultCount)
-
-	for rows.Next() {
-		var download download.Download
-		err = rows.Scan(&download)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, &download)
+	err = rows.All(&results)
+	if err != nil {
+		return nil, err
 	}
+
 	return results, nil
 }
 
@@ -163,9 +165,9 @@ func NewDownloadStoreWithSession(s *r.Session, dbName string, tableName string) 
 
 func NewDownloadStore(c Config) (*DownloadStore, error) {
 	session, err := r.Connect(r.ConnectOpts{
-		Address:   c.Address,
-		MaxIdle:   c.MaxIdle,
-		MaxActive: c.MaxActive,
+		Address: c.Address,
+		MaxIdle: c.MaxIdle,
+		MaxOpen: c.MaxOpen,
 	})
 
 	if err != nil {

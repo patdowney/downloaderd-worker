@@ -1,6 +1,7 @@
 package download
 
-type DownloadStore interface {
+// Store ...
+type Store interface {
 	Add(*Download) error
 	Update(*Download) error
 	Delete(*Download) error

@@ -1,8 +1,8 @@
 package rethinkdb
 
 type Config struct {
-	Address   string
-	MaxIdle   int
-	MaxActive int
-	Database  string
+	Address  string
+	MaxIdle  int
+	MaxOpen  int
+	Database string
 }

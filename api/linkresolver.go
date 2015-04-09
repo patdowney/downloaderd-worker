@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// LinkResolver ...
 type LinkResolver struct {
 	DefaultScheme string
 	DefaultHost   string
@@ -32,12 +33,14 @@ func (r *LinkResolver) urlHost(req *http.Request) string {
 	return host
 }
 
+// ResolveLinks ...
 func (r *LinkResolver) ResolveLinks(req *http.Request, links *[]Link) {
-	for i, _ := range *links {
+	for i := range *links {
 		r.ResolveLink(req, &(*links)[i])
 	}
 }
 
+// ResolveLink ...
 func (r *LinkResolver) ResolveLink(req *http.Request, link *Link) {
 	route := r.Router.Get(link.RouteName)
 	if route != nil {
@@ -52,6 +55,7 @@ func (r *LinkResolver) ResolveLink(req *http.Request, link *Link) {
 	}
 }
 
+// NewLinkResolver ...
 func NewLinkResolver(router *mux.Router) *LinkResolver {
 	r := LinkResolver{Router: router, DefaultScheme: "http", DefaultHost: "localhost:8080"}
 	return &r

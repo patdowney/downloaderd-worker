@@ -28,9 +28,9 @@ func NewGeneralStoreWithSession(s *r.Session, databaseName string, tableName str
 
 func NewGeneralStore(c Config, tableName string) (*GeneralStore, error) {
 	session, err := r.Connect(r.ConnectOpts{
-		Address:   c.Address,
-		MaxIdle:   c.MaxIdle,
-		MaxActive: c.MaxActive,
+		Address: c.Address,
+		MaxIdle: c.MaxIdle,
+		MaxOpen: c.MaxOpen,
 	})
 
 	if err != nil {
@@ -40,7 +40,7 @@ func NewGeneralStore(c Config, tableName string) (*GeneralStore, error) {
 	return NewGeneralStoreWithSession(session, c.Database, tableName)
 }
 
-func (s *GeneralStore) Get(key interface{}) r.RqlTerm {
+func (s *GeneralStore) Get(key interface{}) r.Term {
 	return s.BaseTerm().Get(key)
 }
 
@@ -58,7 +58,7 @@ func (s *GeneralStore) DeleteByKey(key interface{}, optArgs ...r.DeleteOpts) err
 	return err
 }
 
-func (s *GeneralStore) GetAllByIndex(index interface{}, keys ...interface{}) r.RqlTerm {
+func (s *GeneralStore) GetAllByIndex(index interface{}, keys ...interface{}) r.Term {
 	return s.BaseTerm().GetAllByIndex(index, keys...)
 }
 
@@ -100,6 +100,6 @@ func (s *GeneralStore) IndexCreate(field string) error {
 	return nil
 }
 
-func (s *GeneralStore) BaseTerm() r.RqlTerm {
+func (s *GeneralStore) BaseTerm() r.Term {
 	return r.Db(s.DatabaseName).Table(s.TableName)
 }

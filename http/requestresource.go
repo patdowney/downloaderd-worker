@@ -14,6 +14,7 @@ import (
 	"net/url"
 )
 
+// RequestResource ...
 type RequestResource struct {
 	Clock          common.Clock
 	RequestService *download.RequestService
@@ -21,6 +22,7 @@ type RequestResource struct {
 	linkResolver   *api.LinkResolver
 }
 
+// NewRequestResource ...
 func NewRequestResource(requestService *download.RequestService, linkResolver *api.LinkResolver) *RequestResource {
 	return &RequestResource{
 		Clock:          &common.RealClock{},
@@ -28,6 +30,7 @@ func NewRequestResource(requestService *download.RequestService, linkResolver *a
 		linkResolver:   linkResolver}
 }
 
+// RegisterRoutes ...
 func (r *RequestResource) RegisterRoutes(parentRouter *mux.Router) {
 	parentRouter.HandleFunc("/", r.Index()).Methods("GET", "HEAD")
 	parentRouter.HandleFunc("/", r.Post()).Methods("POST")
@@ -47,10 +50,12 @@ func (r *RequestResource) populateLinks(req *http.Request, request *api.Request)
 	request.ResolveLinks(r.linkResolver, req)
 }
 
+// WrapError ...
 func (r *RequestResource) WrapError(err error) *api.Error {
 	return download.ToAPIError(common.NewErrorWrapper(err, r.Clock.Now()))
 }
 
+// Index ...
 func (r *RequestResource) Index() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		requestList, err := r.RequestService.ListAll()
@@ -77,6 +82,7 @@ func (r *RequestResource) Index() http.HandlerFunc {
 	}
 }
 
+// Get ...
 func (r *RequestResource) Get() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
@@ -115,6 +121,7 @@ func (r *RequestResource) Get() http.HandlerFunc {
 	}
 }
 
+// ValidateIncomingRequest ...
 func (r *RequestResource) ValidateIncomingRequest(inReq *api.IncomingRequest) error {
 	if inReq.URL == "" {
 		return errors.New("empty url")
@@ -124,11 +131,12 @@ func (r *RequestResource) ValidateIncomingRequest(inReq *api.IncomingRequest) er
 	if err != nil {
 		return err
 	} else if u.Scheme != "http" && u.Scheme != "https" {
-		return errors.New(fmt.Sprintf("unsupported url scheme: '%s'", u.Scheme))
+		return fmt.Errorf("unsupported url scheme: '%s'", u.Scheme)
 	}
 	return nil
 }
 
+// DecodeInputRequest ...
 func (r *RequestResource) DecodeInputRequest(body io.Reader) (*api.IncomingRequest, error) {
 	decoder := json.NewDecoder(body)
 	var inReq api.IncomingRequest
@@ -140,6 +148,7 @@ func (r *RequestResource) DecodeInputRequest(body io.Reader) (*api.IncomingReque
 	return &inReq, nil
 }
 
+// GetRequestURL ...
 func (r *RequestResource) GetRequestURL(id string) (*url.URL, error) {
 	if r.router != nil {
 		return r.router.Get("request").URL("id", id)
@@ -148,6 +157,7 @@ func (r *RequestResource) GetRequestURL(id string) (*url.URL, error) {
 	return nil, errors.New("no router set")
 }
 
+// Post ...
 func (r *RequestResource) Post() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		apiIncomingRequest, err := r.DecodeInputRequest(req.Body)

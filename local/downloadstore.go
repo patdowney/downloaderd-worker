@@ -7,12 +7,14 @@ import (
 	"github.com/patdowney/downloaderd/download"
 )
 
+// DownloadStore ...
 type DownloadStore struct {
-	LocalJSONStore
+	JSONStore
 	sync.RWMutex
 	repository []*download.Download
 }
 
+// Delete ...
 func (s *DownloadStore) Delete(d *download.Download) error {
 	s.Lock()
 	newRepository := make([]*download.Download, 0, len(s.repository))
@@ -30,6 +32,7 @@ func (s *DownloadStore) Delete(d *download.Download) error {
 	return err
 }
 
+// Add ...
 func (s *DownloadStore) Add(download *download.Download) error {
 	s.Lock()
 	s.repository = append(s.repository, download)
@@ -40,6 +43,7 @@ func (s *DownloadStore) Add(download *download.Download) error {
 	return err
 }
 
+// Update ...
 func (s *DownloadStore) Update(download *download.Download) error {
 	d, err := s.FindByID(download.ID)
 	if err == nil {
@@ -51,6 +55,7 @@ func (s *DownloadStore) Update(download *download.Download) error {
 	return err
 }
 
+// Commit ...
 func (s *DownloadStore) Commit() error {
 	return s.SaveToDisk(s.repository)
 }
@@ -75,6 +80,7 @@ func (s *DownloadStore) load() error {
 	return err
 }
 
+// FindByID ...
 func (s *DownloadStore) FindByID(downloadID string) (*download.Download, error) {
 	s.RLock()
 	defer s.RUnlock()
@@ -87,6 +93,7 @@ func (s *DownloadStore) FindByID(downloadID string) (*download.Download, error) 
 	return nil, nil
 }
 
+// FindByResourceKey ...
 func (s *DownloadStore) FindByResourceKey(resourceKey download.ResourceKey) (*download.Download, error) {
 	s.RLock()
 	defer s.RUnlock()
@@ -105,6 +112,7 @@ func (s *DownloadStore) FindByResourceKey(resourceKey download.ResourceKey) (*do
 	return nil, nil
 }
 
+// FindAll ...
 func (s *DownloadStore) FindAll(offset uint, count uint) ([]*download.Download, error) {
 	s.RLock()
 	defer s.RUnlock()
@@ -115,11 +123,13 @@ func (s *DownloadStore) FindAll(offset uint, count uint) ([]*download.Download, 
 	return tmpRepository, nil
 }
 
+// FindFinished ...
 func (s *DownloadStore) FindFinished(offset uint, count uint) ([]*download.Download, error) {
 	s.RLock()
 	defer s.RUnlock()
 
-	tmpRepository := make([]*download.Download, 0)
+	var tmpRepository []*download.Download
+	//tmpRepository := make([]*download.Download, 0)
 
 	repoSlice := s.sliceRepository(offset, count)
 	for _, download := range repoSlice {
@@ -131,11 +141,12 @@ func (s *DownloadStore) FindFinished(offset uint, count uint) ([]*download.Downl
 	return tmpRepository, nil
 }
 
+// FindNotFinished ...
 func (s *DownloadStore) FindNotFinished(offset uint, count uint) ([]*download.Download, error) {
 	s.RLock()
 	defer s.RUnlock()
 
-	tmpRepository := make([]*download.Download, 0)
+	var tmpRepository []*download.Download
 
 	repoSlice := s.sliceRepository(offset, count)
 	for _, download := range repoSlice {
@@ -147,11 +158,12 @@ func (s *DownloadStore) FindNotFinished(offset uint, count uint) ([]*download.Do
 	return tmpRepository, nil
 }
 
+// FindInProgress ...
 func (s *DownloadStore) FindInProgress(offset uint, count uint) ([]*download.Download, error) {
 	s.RLock()
 	defer s.RUnlock()
 
-	tmpRepository := make([]*download.Download, 0)
+	var tmpRepository []*download.Download
 	var beginningOfTime time.Time
 
 	repoSlice := s.sliceRepository(offset, count)
@@ -170,11 +182,12 @@ func (s *DownloadStore) sliceRepository(offset uint, count uint) []*download.Dow
 	return s.repository[offset:(offset + count)]
 }
 
+// FindWaiting ...
 func (s *DownloadStore) FindWaiting(offset uint, count uint) ([]*download.Download, error) {
 	s.RLock()
 	defer s.RUnlock()
 
-	tmpRepository := make([]*download.Download, 0)
+	var tmpRepository []*download.Download
 	var beginningOfTime time.Time
 
 	repoSlice := s.sliceRepository(offset, count)
@@ -189,6 +202,7 @@ func (s *DownloadStore) FindWaiting(offset uint, count uint) ([]*download.Downlo
 	return tmpRepository, nil
 }
 
+// NewDownloadStore ...
 func NewDownloadStore(dataFile string) (*DownloadStore, error) {
 	downloadStore := &DownloadStore{
 		repository: make([]*download.Download, 0)}

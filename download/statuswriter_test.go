@@ -10,7 +10,7 @@ type DummyStatusSender struct {
 }
 
 func (s *DummyStatusSender) SendUpdate(update StatusUpdate) {
-	s.UpdatesSent += 1
+	s.UpdatesSent++
 }
 
 func TestAccumulateTotal(t *testing.T) {

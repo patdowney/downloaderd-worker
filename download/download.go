@@ -5,13 +5,13 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
-	"errors"
 	"fmt"
 	"hash"
 	"strings"
 	"time"
 )
 
+// Download ...
 type Download struct {
 	ID            string `gorethink:"id,omitempty"`
 	URL           string
@@ -22,9 +22,10 @@ type Download struct {
 	TimeStarted   time.Time
 	TimeRequested time.Time
 	Finished      bool
-	Errors        []DownloadError
+	Errors        []Error
 }
 
+// NewDownload ...
 func NewDownload(id string, request *Request, downloadTime time.Time) *Download {
 	d := Download{
 		ID:            id,
@@ -34,12 +35,12 @@ func NewDownload(id string, request *Request, downloadTime time.Time) *Download 
 		Metadata:      request.Metadata,
 		Status:        &Status{},
 		TimeRequested: downloadTime,
-		Errors:        make([]DownloadError, 0)}
+		Errors:        make([]Error, 0)}
 
 	validatedChecksum, err := d.ValidateChecksum(d.ChecksumType)
 	d.ChecksumType = validatedChecksum
 	if err != nil {
-		de := DownloadError{DownloadID: id}
+		de := Error{DownloadID: id}
 		de.Time = downloadTime
 		de.OriginalError = err.Error()
 		d.Errors = append(d.Errors, de)
@@ -48,19 +49,23 @@ func NewDownload(id string, request *Request, downloadTime time.Time) *Download 
 	return &d
 }
 
-func (s *Download) PercentComplete() float32 {
-	return float32(100 * (float64(s.Status.BytesRead) / float64(s.Metadata.Size)))
+// PercentComplete ...
+func (d *Download) PercentComplete() float32 {
+	return float32(100 * (float64(d.Status.BytesRead) / float64(d.Metadata.Size)))
 }
 
-func (s *Download) Duration() time.Duration {
-	return s.Status.UpdateTime.Sub(s.TimeStarted)
+// Duration ...
+func (d *Download) Duration() time.Duration {
+	return d.Status.UpdateTime.Sub(d.TimeStarted)
 }
 
-func (s *Download) AverageBytesPerSecond() float32 {
-	return float32(float64(s.Status.BytesRead) / s.Duration().Seconds())
+// AverageBytesPerSecond ...
+func (d *Download) AverageBytesPerSecond() float32 {
+	return float32(float64(d.Status.BytesRead) / d.Duration().Seconds())
 }
 
-func (s *Download) ValidateChecksum(checksumType string) (string, error) {
+// ValidateChecksum ...
+func (d *Download) ValidateChecksum(checksumType string) (string, error) {
 	switch strings.ToLower(checksumType) {
 	case "md5":
 		return checksumType, nil
@@ -72,10 +77,10 @@ func (s *Download) ValidateChecksum(checksumType string) (string, error) {
 		return checksumType, nil
 	}
 
-	errMsg := fmt.Sprintf("No hash found for %s defaulting to %s", s.ChecksumType, "sha256")
-	return "sha256", errors.New(errMsg)
+	return "sha256", fmt.Errorf("No hash found for %s defaulting to %s", d.ChecksumType, "sha256")
 }
 
+// Hash ...
 func (d *Download) Hash() (hash.Hash, error) {
 	switch strings.ToLower(d.ChecksumType) {
 	case "md5":
@@ -88,9 +93,10 @@ func (d *Download) Hash() (hash.Hash, error) {
 		return sha512.New(), nil
 	}
 
-	return nil, errors.New(fmt.Sprintf("Invalid checksum type %s", d.ChecksumType))
+	return nil, fmt.Errorf("Invalid checksum type %s", d.ChecksumType)
 }
 
+// AddStatusUpdate ...
 func (d *Download) AddStatusUpdate(statusUpdate *StatusUpdate) {
 	var beginningOfTime time.Time
 	if d.TimeStarted.UTC() == beginningOfTime.UTC() {

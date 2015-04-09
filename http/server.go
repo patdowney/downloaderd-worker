@@ -8,23 +8,27 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type HTTPConfig struct {
+// Config ...
+type Config struct {
 	ListenAddress string
 }
 
+// Server ...
 type Server struct {
 	ListenAddress   string
 	Router          *mux.Router
 	AccessLogWriter io.Writer
 }
 
-func NewServer(config *HTTPConfig, accessLogWriter io.Writer) *Server {
+// NewServer ...
+func NewServer(config *Config, accessLogWriter io.Writer) *Server {
 	return &Server{
 		ListenAddress:   config.ListenAddress,
 		Router:          mux.NewRouter(),
 		AccessLogWriter: accessLogWriter}
 }
 
+// AddResource ...
 func (s *Server) AddResource(pathPrefix string, r Resource) {
 	subrouter := s.Router.PathPrefix(pathPrefix).Subrouter()
 	r.RegisterRoutes(subrouter)
@@ -34,6 +38,7 @@ func (s *Server) handler() http.Handler {
 	return handlers.CombinedLoggingHandler(s.AccessLogWriter, s.Router)
 }
 
+// ListenAndServe ...
 func (s *Server) ListenAndServe() error {
 	http.Handle("/", s.handler())
 

@@ -1,8 +1,6 @@
 package local
 
 import (
-	//"bufio"
-	"errors"
 	"fmt"
 	"github.com/patdowney/downloaderd/download"
 	"io"
@@ -12,20 +10,24 @@ import (
 	"strings"
 )
 
+// FileStore ...
 type FileStore struct {
 	RootDirectory string
 }
 
+// NewFileStore ...
 func NewFileStore(rootDirectory string) *FileStore {
 	return &FileStore{RootDirectory: rootDirectory}
 }
 
+// SavePathFromURL ...
 func (us *FileStore) SavePathFromURL(sourceURL string) string {
 	urlObj, _ := url.Parse(sourceURL)
 
 	return filepath.Join(urlObj.Host, urlObj.Path)
 }
 
+// SavePathForDownload ...
 func (us *FileStore) SavePathForDownload(download *download.Download) (string, error) {
 	savePathFromURL := us.SavePathFromURL(download.URL)
 	cleanRootDirectory := filepath.Clean(us.RootDirectory)
@@ -34,12 +36,13 @@ func (us *FileStore) SavePathForDownload(download *download.Download) (string, e
 
 	//ensure cleanSavePath starts with us.RootDirectory
 	if !strings.HasPrefix(cleanSavePath, cleanRootDirectory) {
-		return "", errors.New(fmt.Sprintf("localurlsaver: %s doesn't contain %s", cleanRootDirectory, cleanSavePath))
+		return "", fmt.Errorf("localurlsaver: %s doesn't contain %s", cleanRootDirectory, cleanSavePath)
 	}
 
 	return cleanSavePath, nil
 }
 
+// GetReader ...
 func (us *FileStore) GetReader(download *download.Download) (io.ReadCloser, error) {
 	dataPath, err := us.SavePathForDownload(download)
 	if err != nil {
@@ -54,6 +57,7 @@ func (us *FileStore) GetReader(download *download.Download) (io.ReadCloser, erro
 	return openFile, nil
 }
 
+// GetWriter ...
 func (us *FileStore) GetWriter(download *download.Download) (io.WriteCloser, error) {
 	savePath, err := us.SavePathForDownload(download)
 	if err != nil {
@@ -73,6 +77,22 @@ func (us *FileStore) GetWriter(download *download.Download) (io.WriteCloser, err
 	return saveFile, nil
 }
 
+// Delete ...
+func (us *FileStore) Delete(download *download.Download) (bool, error) {
+	dataPath, err := us.SavePathForDownload(download)
+	if err != nil {
+		return false, err
+	}
+
+	err = os.Remove(dataPath)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// Verify ...
 func (us *FileStore) Verify(download *download.Download) (bool, error) {
 	savePath, err := us.SavePathForDownload(download)
 	if err != nil {
@@ -88,7 +108,7 @@ func (us *FileStore) Verify(download *download.Download) (bool, error) {
 	sizeOnDisk := uint64(fileInfo.Size())
 
 	if sizeOnDisk != expectedSize {
-		return false, errors.New(fmt.Sprintf("size mismatch: expected=%d, actual=%d", expectedSize, sizeOnDisk))
+		return false, fmt.Errorf("size mismatch: expected=%d, actual=%d", expectedSize, sizeOnDisk)
 	}
 
 	// we're cheating - if we really meant it we'd compare checksums

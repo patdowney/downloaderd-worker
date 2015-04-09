@@ -6,7 +6,7 @@ import (
 )
 
 type HookStore struct {
-	LocalJSONStore
+	JSONStore
 	sync.RWMutex
 	repository []*download.Hook
 }

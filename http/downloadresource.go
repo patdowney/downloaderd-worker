@@ -16,14 +16,16 @@ import (
 	"github.com/patdowney/downloaderd/download"
 )
 
+// DownloadResource ...
 type DownloadResource struct {
 	Clock           common.Clock
-	DownloadService *download.DownloadService
+	DownloadService *download.Service
 	router          *mux.Router
 	linkResolver    *api.LinkResolver
 }
 
-func NewDownloadResource(downloadService *download.DownloadService, linkResolver *api.LinkResolver) *DownloadResource {
+// NewDownloadResource ...
+func NewDownloadResource(downloadService *download.Service, linkResolver *api.LinkResolver) *DownloadResource {
 	return &DownloadResource{
 		Clock:           &common.RealClock{},
 		DownloadService: downloadService,
@@ -40,6 +42,7 @@ func (r *DownloadResource) populateLinks(req *http.Request, download *api.Downlo
 	download.ResolveLinks(r.linkResolver, req)
 }
 
+// RegisterRoutes ...
 func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
 	parentRouter.HandleFunc("/", r.Index(r.AllIndex())).Methods("GET", "HEAD")
 
@@ -70,28 +73,41 @@ func (r *DownloadResource) RegisterRoutes(parentRouter *mux.Router) {
 	r.linkResolver = api.NewLinkResolver(parentRouter)
 }
 
+// WrapError ...
 func (r *DownloadResource) WrapError(err error) *api.Error {
 	return download.ToAPIError(common.NewErrorWrapper(err, r.Clock.Now()))
 }
 
+// IndexFunc ...
 type IndexFunc func() ([]*download.Download, error)
 
+// FinishedIndex ...
 func (r *DownloadResource) FinishedIndex() IndexFunc {
 	return r.DownloadService.ListFinished
+
 }
+
+// NotFinishedIndex ...
 func (r *DownloadResource) NotFinishedIndex() IndexFunc {
 	return r.DownloadService.ListNotFinished
 }
+
+// InProgressIndex ...
 func (r *DownloadResource) InProgressIndex() IndexFunc {
 	return r.DownloadService.ListInProgress
 }
+
+// WaitingIndex ...
 func (r *DownloadResource) WaitingIndex() IndexFunc {
 	return r.DownloadService.ListWaiting
 }
+
+// AllIndex ...
 func (r *DownloadResource) AllIndex() IndexFunc {
 	return r.DownloadService.ListAll
 }
 
+// Index ...
 func (r *DownloadResource) Index(indexFunc IndexFunc) http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		downloadList, err := indexFunc()
@@ -113,11 +129,13 @@ func (r *DownloadResource) Index(indexFunc IndexFunc) http.HandlerFunc {
 			encErr := encoder.Encode(dl)
 			if encErr != nil {
 				log.Printf("encoder-error: %v", encErr)
+				log.Printf("encoder-error-struct: %v", dl)
 			}
 		}
 	}
 }
 
+// Stats ...
 func (r *DownloadResource) Stats(indexFunc IndexFunc) http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		downloadList, err := indexFunc()
@@ -135,7 +153,7 @@ func (r *DownloadResource) Stats(indexFunc IndexFunc) http.HandlerFunc {
 		} else {
 			rw.Header().Set("Access-Control-Allow-Origin", "*")
 
-			stats := download.DownloadStats{Clock: r.Clock}
+			stats := download.Stats{Clock: r.Clock}
 			stats.AddList(downloadList)
 			rw.WriteHeader(http.StatusOK)
 			ds := download.ToAPIDownloadStats(&stats)
@@ -148,6 +166,7 @@ func (r *DownloadResource) Stats(indexFunc IndexFunc) http.HandlerFunc {
 	}
 }
 
+// VerifyData ...
 func (r *DownloadResource) VerifyData() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
@@ -198,6 +217,7 @@ func (r *DownloadResource) VerifyData() http.HandlerFunc {
 	}
 }
 
+// GetData ...
 func (r *DownloadResource) GetData() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
@@ -256,6 +276,7 @@ func (r *DownloadResource) GetData() http.HandlerFunc {
 	}
 }
 
+// Delete ...
 func (r *DownloadResource) Delete() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
@@ -284,6 +305,8 @@ func (r *DownloadResource) Delete() http.HandlerFunc {
 		}
 	}
 }
+
+// Get ...
 func (r *DownloadResource) Get() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)

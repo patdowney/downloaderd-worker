@@ -8,20 +8,22 @@ import (
 	"sync"
 )
 
-type LocalJSONStore struct {
+// JSONStore ...
+type JSONStore struct {
 	sync.RWMutex
 	DataFile string
 }
 
-func (l *LocalJSONStore) writeToWriter(w io.Writer, data interface{}) error {
+func (l *JSONStore) writeToWriter(w io.Writer, data interface{}) error {
 	encoder := json.NewEncoder(w)
 	return encoder.Encode(data)
 
 }
 
-func (l *LocalJSONStore) SaveToDisk(data interface{}) error {
+// SaveToDisk ...
+func (l *JSONStore) SaveToDisk(data interface{}) error {
 	if l.DataFile == "" {
-		return errors.New("no datafile specified for json store.")
+		return errors.New("no datafile specified for json store")
 	}
 
 	l.RLock()
@@ -36,7 +38,8 @@ func (l *LocalJSONStore) SaveToDisk(data interface{}) error {
 	return l.writeToWriter(openFile, data)
 }
 
-func (l *LocalJSONStore) LoadFromDisk(data interface{}) error {
+// LoadFromDisk ...
+func (l *JSONStore) LoadFromDisk(data interface{}) error {
 	if l.DataFile == "" {
 		return nil
 	}

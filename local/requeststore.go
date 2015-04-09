@@ -6,7 +6,7 @@ import (
 )
 
 type RequestStore struct {
-	LocalJSONStore
+	JSONStore
 	sync.RWMutex
 	repository []*download.Request
 }
@@ -43,7 +43,7 @@ func (s *RequestStore) FindByID(requestID string) (*download.Request, error) {
 	return nil, nil
 }
 
-func (s *RequestStore) FindByResourceKey(resourceKey download.ResourceKey) ([]*download.Request, error) {
+func (s *RequestStore) FindByResourceKey(resourceKey download.ResourceKey, offset uint, count uint) ([]*download.Request, error) {
 	s.RLock()
 	defer s.RUnlock()
 	results := make([]*download.Request, 0, len(s.repository))
@@ -55,7 +55,7 @@ func (s *RequestStore) FindByResourceKey(resourceKey download.ResourceKey) ([]*d
 	return results, nil
 }
 
-func (s *RequestStore) FindAll() ([]*download.Request, error) {
+func (s *RequestStore) FindAll(offset uint, count uint) ([]*download.Request, error) {
 	s.RLock()
 	defer s.RUnlock()
 

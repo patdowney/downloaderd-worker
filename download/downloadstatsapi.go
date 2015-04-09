@@ -6,7 +6,8 @@ import (
 	"github.com/patdowney/downloaderd/api"
 )
 
-func ToAPIDownloadStats(s *DownloadStats) *api.DownloadStats {
+// ToAPIDownloadStats ...
+func ToAPIDownloadStats(s *Stats) *api.DownloadStats {
 	as := &api.DownloadStats{
 		WaitTime: api.Stat{
 			Min:   s.WaitTime.Min() / float64(time.Millisecond),

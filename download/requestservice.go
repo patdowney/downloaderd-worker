@@ -7,14 +7,16 @@ import (
 	"net/http"
 )
 
+// RequestService ...
 type RequestService struct {
 	Clock           common.Clock
 	IDGenerator     IDGenerator
 	requestStore    RequestStore
-	downloadService *DownloadService
+	downloadService *Service
 }
 
-func NewRequestService(requestStore RequestStore, downloadService *DownloadService) *RequestService {
+// NewRequestService ...
+func NewRequestService(requestStore RequestStore, downloadService *Service) *RequestService {
 	s := RequestService{
 		IDGenerator:     &UUIDGenerator{},
 		Clock:           &common.RealClock{},
@@ -24,6 +26,7 @@ func NewRequestService(requestStore RequestStore, downloadService *DownloadServi
 	return &s
 }
 
+// ProcessNewRequest ...
 func (s *RequestService) ProcessNewRequest(downloadRequest *Request) (*Request, error) {
 	id, err := s.IDGenerator.GenerateID()
 	if err != nil {
@@ -60,10 +63,12 @@ func (s *RequestService) ProcessNewRequest(downloadRequest *Request) (*Request, 
 	return downloadRequest, err
 }
 
+// ListAll ...
 func (s *RequestService) ListAll() ([]*Request, error) {
 	return s.requestStore.FindAll(0, 100)
 }
 
+// FindByID ...
 func (s *RequestService) FindByID(id string) (*Request, error) {
 	return s.requestStore.FindByID(id)
 }

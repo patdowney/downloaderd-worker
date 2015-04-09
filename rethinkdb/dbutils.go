@@ -4,19 +4,19 @@ import (
 	r "github.com/dancannon/gorethink"
 )
 
-type IndexFunc func(row r.RqlTerm) interface{}
+type IndexFunc func(row r.Term) interface{}
 
 func IndexExists(s *r.Session, databaseName, tableName, indexName string) (bool, error) {
 	return ListContains(s, r.Db(databaseName).Table(tableName).IndexList(), indexName)
 }
 
-func ListContains(s *r.Session, t r.RqlTerm, name string) (bool, error) {
-	row, err := t.Contains(name).RunRow(s)
+func ListContains(s *r.Session, t r.Term, name string) (bool, error) {
+	rows, err := t.Contains(name).Run(s)
 	if err != nil {
 		return false, err
 	}
 	var contains bool
-	err = row.Scan(&contains)
+	err = rows.One(&contains)
 	if err != nil {
 		return false, err
 	}

@@ -1,7 +1,6 @@
 package s3
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -13,10 +12,12 @@ import (
 	"launchpad.net/goamz/s3"
 )
 
+// FileStore ...
 type FileStore struct {
 	Bucket *s3.Bucket
 }
 
+// Config ...
 type Config struct {
 	BucketName string
 	RegionName string
@@ -44,6 +45,7 @@ func authFromEnvOrConfig(c Config) (aws.Auth, error) {
 	return auth, err
 }
 
+// NewFileStore ...
 func NewFileStore(c Config) (*FileStore, error) {
 	auth, err := authFromEnvOrConfig(c)
 	if err != nil {
@@ -56,12 +58,14 @@ func NewFileStore(c Config) (*FileStore, error) {
 	return &FileStore{Bucket: bucket}, nil
 }
 
+// SavePathFromURL ...
 func (s *FileStore) SavePathFromURL(sourceURL string) string {
 	urlObj, _ := url.Parse(sourceURL)
 
 	return filepath.Join(urlObj.Host, urlObj.Path)
 }
 
+// SavePathForDownload ...
 func (s *FileStore) SavePathForDownload(download *download.Download) (string, error) {
 	urlObj, err := url.Parse(download.URL)
 	if err != nil {
@@ -71,6 +75,7 @@ func (s *FileStore) SavePathForDownload(download *download.Download) (string, er
 	return p, nil
 }
 
+// GetReader ...
 func (s *FileStore) GetReader(download *download.Download) (io.ReadCloser, error) {
 	dataPath, err := s.SavePathForDownload(download)
 	if err != nil {
@@ -84,6 +89,7 @@ func (s *FileStore) s3upload(reader io.Reader, savePath string, length int64, co
 	return s.Bucket.PutReader(savePath, reader, length, contentType, s3.BucketOwnerFull)
 }
 
+// GetWriter ...
 func (s *FileStore) GetWriter(download *download.Download) (io.WriteCloser, error) {
 	savePath, err := s.SavePathForDownload(download)
 	if err != nil {
@@ -110,12 +116,13 @@ func (s *FileStore) getFileInfo(s3Key string) (*s3.Key, error) {
 	}
 
 	if len(listResponse.Contents) != 1 {
-		return nil, errors.New(fmt.Sprintf("key not found: %v", s3Key))
+		return nil, fmt.Errorf("key not found: %v", s3Key)
 	}
 
 	return &listResponse.Contents[0], nil
 }
 
+// Delete ...
 func (s *FileStore) Delete(download *download.Download) (bool, error) {
 	savePath, err := s.SavePathForDownload(download)
 	if err != nil {
@@ -130,6 +137,7 @@ func (s *FileStore) Delete(download *download.Download) (bool, error) {
 	return true, nil
 }
 
+// Verify ...
 func (s *FileStore) Verify(download *download.Download) (bool, error) {
 	savePath, err := s.SavePathForDownload(download)
 	if err != nil {
@@ -140,13 +148,13 @@ func (s *FileStore) Verify(download *download.Download) (bool, error) {
 
 	fileKey, err := s.getFileInfo(savePath)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("verify(%v): %v", download.ID, err.Error()))
+		return false, fmt.Errorf("verify(%v): %v", download.ID, err.Error())
 	}
 
 	sizeOnS3 := uint64(fileKey.Size)
 
 	if sizeOnS3 != expectedSize {
-		return false, errors.New(fmt.Sprintf("verify(%v):size mismatch (%v): expected=%d, actual=%d", download.ID, savePath, expectedSize, sizeOnS3))
+		return false, fmt.Errorf("verify(%v):size mismatch (%v): expected=%d, actual=%d", download.ID, savePath, expectedSize, sizeOnS3)
 	}
 
 	// we're cheating - if we really meant it we'd compare checksums

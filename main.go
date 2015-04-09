@@ -9,11 +9,12 @@ import (
 	"github.com/patdowney/downloaderd/api"
 	"github.com/patdowney/downloaderd/download"
 	dh "github.com/patdowney/downloaderd/http"
-	//"github.com/patdowney/downloaderd/local"
+	"github.com/patdowney/downloaderd/local"
 	"github.com/patdowney/downloaderd/rethinkdb"
-	"github.com/patdowney/downloaderd/s3"
+	//"github.com/patdowney/downloaderd/s3"
 )
 
+// Config ...
 type Config struct {
 	ListenAddress     string
 	WorkerCount       uint
@@ -29,11 +30,13 @@ type Config struct {
 	RethinkDBAddress string
 }
 
+// ConfigureLogging ...
 func ConfigureLogging(config *Config) {
 	log.SetOutput(config.ErrorLogWriter)
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
 }
 
+// ParseArgs ...
 func ParseArgs() *Config {
 	c := &Config{}
 	flag.StringVar(&c.ListenAddress, "http", "localhost:8080", "address to listen on")
@@ -52,35 +55,38 @@ func ParseArgs() *Config {
 	return c
 }
 
+// CreateServer ...
 func CreateServer(config *Config) {
-	s := dh.NewServer(&dh.HTTPConfig{ListenAddress: config.ListenAddress}, os.Stdout)
+	s := dh.NewServer(&dh.Config{ListenAddress: config.ListenAddress}, os.Stdout)
 
-	//downloadStore, err := local.NewDownloadStore(config.DownloadDataFile)
+	//	downloadStore, err := local.NewDownloadStore(config.DownloadDataFile)
+
 	c := rethinkdb.Config{Address: config.RethinkDBAddress,
-		MaxIdle:   10,
-		MaxActive: 20,
-		Database:  "Downloaderd"}
+		MaxIdle:  10,
+		MaxOpen:  20,
+		Database: "Downloaderd"}
 
 	downloadStore, err := rethinkdb.NewDownloadStore(c)
+
 	if err != nil {
 		log.Printf("init-download-store-error: %v", err)
 	}
 
-	//fileStore := local.NewFileStore(config.DownloadDirectory)
-	c3 := s3.Config{BucketName: "downloaderd", RegionName: "us-east-1"}
-	fileStore, err := s3.NewFileStore(c3)
-	if err != nil {
-		log.Printf("s3-init-filestore-error: %v", err)
-	}
+	fileStore := local.NewFileStore(config.DownloadDirectory)
+	//c3 := s3.Config{BucketName: "downloaderd", RegionName: "us-east-1"}
+	//fileStore, err := s3.NewFileStore(c3)
+	//if err != nil {
+	//		log.Printf("s3-init-filestore-error: %v", err)
+	//	}
 
-	//requestStore, err := local.NewRequestStore(config.RequestDataFile)
-	requestStore, err := rethinkdb.NewRequestStore(c)
+	requestStore, err := local.NewRequestStore(config.RequestDataFile)
+	//requestStore, err := rethinkdb.NewRequestStore(c)
 	if err != nil {
 		log.Printf("init-request-store-error: %v", err)
 	}
 
-	//hookStore, err := local.NewHookStore(config.HookDataFile)
-	hookStore, err := rethinkdb.NewHookStore(c)
+	hookStore, err := local.NewHookStore(config.HookDataFile)
+	//hookStore, err := rethinkdb.NewHookStore(c)
 	if err != nil {
 		log.Printf("init-hook-store-error: %v", err)
 	}

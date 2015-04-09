@@ -1,8 +1,6 @@
 package rethinkdb
 
 import (
-	"log"
-
 	r "github.com/dancannon/gorethink"
 	"github.com/patdowney/downloaderd/download"
 )
@@ -11,7 +9,7 @@ type HookStore struct {
 	GeneralStore
 }
 
-func HookKeyIndex(row r.RqlTerm) interface{} {
+func HookKeyIndex(row r.Term) interface{} {
 	return []interface{}{row.Field("DownloadID"), row.Field("RequestID")}
 }
 
@@ -40,7 +38,7 @@ func (s *HookStore) Add(hook *download.Hook) error {
 	return err
 }
 
-func (s *HookStore) AllByHookKey(downloadID string, requestID string) r.RqlTerm {
+func (s *HookStore) AllByHookKey(downloadID string, requestID string) r.Term {
 	return s.GetAllByIndex("HookKeyIndex", []interface{}{downloadID, requestID})
 }
 
@@ -73,25 +71,19 @@ func (s *HookStore) ListAll() ([]*download.Hook, error) {
 	return s.getMultiHook(allLookup)
 }
 
-func (s *HookStore) getMultiHook(term r.RqlTerm) ([]*download.Hook, error) {
+func (s *HookStore) getMultiHook(term r.Term) ([]*download.Hook, error) {
+	var results []*download.Hook
+
 	rows, err := term.Run(s.Session)
 	if err != nil {
-		results := make([]*download.Hook, 0, 0)
-		log.Print(err)
 		return results, err
 	}
 
-	count, _ := rows.Count()
-	results := make([]*download.Hook, 0, count)
-
-	for rows.Next() {
-		var hook download.Hook
-		err = rows.Scan(&hook)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, &hook)
+	err = rows.All(&results)
+	if err != nil {
+		return nil, err
 	}
+
 	return results, nil
 }
 
@@ -119,9 +111,9 @@ func NewHookStoreWithSession(s *r.Session, dbName string, tableName string) (*Ho
 
 func NewHookStore(c Config) (*HookStore, error) {
 	session, err := r.Connect(r.ConnectOpts{
-		Address:   c.Address,
-		MaxIdle:   c.MaxIdle,
-		MaxActive: c.MaxActive,
+		Address: c.Address,
+		MaxIdle: c.MaxIdle,
+		MaxOpen: c.MaxOpen,
 	})
 
 	if err != nil {

@@ -29,7 +29,7 @@ func TestCalculateWaitTimeEasy(t *testing.T) {
 	var bytesRead uint64
 
 	d := createStatTestDownload(requested, started, updated, bytesRead)
-	s := DownloadStats{}
+	s := Stats{}
 
 	expected := time.Hour
 	actual := s.calculateWaitTime(d)
@@ -49,7 +49,7 @@ func TestCalculateWaitTimeNotStarted(t *testing.T) {
 
 	fakeTime, _ := time.Parse(time.RFC3339, "2014-03-16T15:44:05Z")
 	c := &common.FakeClock{FakeTime: fakeTime}
-	s := DownloadStats{Clock: c}
+	s := Stats{Clock: c}
 
 	expected := (40 * time.Minute)
 	actual := s.calculateWaitTime(d)
@@ -66,7 +66,7 @@ func TestCalculateDownloadTimeEasy(t *testing.T) {
 	var bytesRead uint64
 
 	d := createStatTestDownload(requested, started, updated, bytesRead)
-	s := DownloadStats{}
+	s := Stats{}
 
 	expected := (10 * time.Minute)
 	actual := s.calculateDownloadTime(d)
@@ -86,7 +86,7 @@ func TestCalculateDownloadTimeNotStarted(t *testing.T) {
 
 	fakeTime, _ := time.Parse(time.RFC3339, "2014-03-16T15:44:05Z")
 	c := &common.FakeClock{FakeTime: fakeTime}
-	s := DownloadStats{Clock: c}
+	s := Stats{Clock: c}
 
 	expected := 0 * time.Hour
 	actual := s.calculateDownloadTime(d)
@@ -105,14 +105,14 @@ func TestWaitTimeStats(t *testing.T) {
 	d1 := createStatTestDownload(requested, started, updated, bytesRead)
 	d2 := createStatTestDownload(requested, started, updated, bytesRead)
 
-	s := DownloadStats{}
+	s := Stats{}
 	s.Add(d1)
 	s.Add(d2)
 
 	expected := float64(time.Hour)
 	actual := s.WaitTime.Mean()
 	if actual != expected {
-		t.Errorf("mean-wait-time, expected = %d, got=%d", expected, actual)
+		t.Errorf("mean-wait-time, expected = %f, got=%f", expected, actual)
 	}
 }
 
@@ -128,20 +128,20 @@ func TestDownloadTimeStats(t *testing.T) {
 	updated2 := "2014-03-16T16:25:05Z"
 	d2 := createStatTestDownload(requested, started2, updated2, bytesRead)
 
-	s := DownloadStats{}
+	s := Stats{}
 	s.Add(d1)
 	s.Add(d2)
 
 	expected := (float64(10*time.Minute) + float64(21*time.Minute)) / 2.0
 	actual := s.DownloadTime.Mean()
 	if actual != expected {
-		t.Errorf("mean-download-time, expected = %d, got=%d", expected, actual)
+		t.Errorf("mean-download-time, expected = %f, got=%f", expected, actual)
 	}
 
 	expected = float64(10 * time.Minute)
 	actual = s.DownloadTime.Min()
 	if actual != expected {
-		t.Errorf("min-download-time, expected = %d, got=%d", expected, actual)
+		t.Errorf("min-download-time, expected = %f, got=%f", expected, actual)
 	}
 }
 
@@ -156,14 +156,14 @@ func TestBytesReadStats(t *testing.T) {
 	bytesRead2 := uint64(26)
 	d2 := createStatTestDownload(requested, started, updated, bytesRead2)
 
-	s := DownloadStats{}
+	s := Stats{}
 	s.Add(d1)
 	s.Add(d2)
 
 	expected := float64(20)
 	actual := s.BytesRead.Mean()
 	if actual != expected {
-		t.Errorf("mean-bytes-read, expected = %d, got=%d", expected, actual)
+		t.Errorf("mean-bytes-read, expected = %f, got=%f", expected, actual)
 	}
 }
 
@@ -180,7 +180,7 @@ func TestBytesReadStatsFromList(t *testing.T) {
 
 	dl := []*Download{d1, d2}
 
-	s := DownloadStats{}
+	s := Stats{}
 	s.AddList(dl)
 	//s.Add(d1)
 	//s.Add(d2)
@@ -188,6 +188,6 @@ func TestBytesReadStatsFromList(t *testing.T) {
 	expected := float64(20)
 	actual := s.BytesRead.Mean()
 	if actual != expected {
-		t.Errorf("mean-bytes-read, expected = %d, got=%d", expected, actual)
+		t.Errorf("mean-bytes-read, expected = %f, got=%f", expected, actual)
 	}
 }

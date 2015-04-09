@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"testing"
 
 	r "github.com/dancannon/gorethink"
@@ -11,7 +12,15 @@ import (
 )
 
 func createSession() (*r.Session, error) {
-	return r.Connect(map[string]interface{}{"address": "localhost:28015"})
+
+	host := os.Getenv("RETHINKDB_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+
+	address := fmt.Sprintf("%s:28015", host)
+
+	return r.Connect(r.ConnectOpts{Address: address})
 }
 
 func getRandomHexString(byteLength uint) string {
